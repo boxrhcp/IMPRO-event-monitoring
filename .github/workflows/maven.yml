@@ -10,6 +10,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Update the download script
+      run: cp scripts/download-files.sh /home/ubuntu/executables/download-files.sh
     - name: Build with Maven
       run: mvn clean package
     - name: Execute Flink
