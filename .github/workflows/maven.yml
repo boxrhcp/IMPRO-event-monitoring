@@ -19,7 +19,7 @@ jobs:
         cp target/impro-event-monitoring-0.1.jar /home/ubuntu/executables/impro-event-monitoring-0.1.jar
         cd /home/ubuntu/
         ./Downloads/flink-1.9.1/bin/flink run ./executables/impro-event-monitoring-0.1.jar \
-                     --input /home/ubuntu/source/gkg_example_50.csv --output /home/ubuntu/results/results.csv
+                     --input /home/ubuntu/source/ --output /home/ubuntu/results/results.csv
 
         
         
