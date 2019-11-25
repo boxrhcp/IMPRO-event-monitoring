@@ -1,21 +1,4 @@
-# IMPRO-DBPRO-WS19-20-Tutorial
-
-To test it in the server:
-  - Execute "mvn clean package".
-  - Upload JAR and add the input and output args.
-
-Exercises:
-   - BatchJob: Transactions data analysis
-  
-   DataSet transformations:
-   https://ci.apache.org/projects/flink/flink-docs-release-1.9/dev/stream/operators/
-   
-   
-   - StreamJob: Time series data analysis
-   
-   DataStream transformations:
-   https://ci.apache.org/projects/flink/flink-docs-release-1.9/dev/stream/operators/
-
+# IMPRO-DBPRO-Event-Monitoring
 
 ## Useful links:
 
