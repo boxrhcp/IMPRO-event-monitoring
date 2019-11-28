@@ -11,6 +11,6 @@ filename = gkg_url.split('/')[-1].replace('\n','')
 print(filename)
 urllib.request.urlretrieve(gkg_url,filename)
 with zipfile.ZipFile(filename, 'r') as zip_ref:
-    zip_ref.extractall('../source')
+    zip_ref.extractall('/home/ubuntu/source')
 os.remove(filename)
 
