@@ -71,7 +71,6 @@ under the License.
 			<artifactId>flink-cep_2.11</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
-
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
 
 		<!-- Example:
@@ -82,6 +81,37 @@ under the License.
 			<version>${flink.version}</version>
 		</dependency>
 		-->
+
+		<!-- https://mvnrepository.com/artifact/org.apache.flink/flink-connector-elasticsearch6 -->
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-elasticsearch6_2.12</artifactId>
+			<version>1.7.2</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.elasticsearch.client/elasticsearch-rest-high-level-client -->
+		<dependency>
+			<groupId>org.elasticsearch.client</groupId>
+			<artifactId>elasticsearch-rest-high-level-client</artifactId>
+			<version>6.8.5</version>
+		</dependency>
+
+
+<!--		&lt;!&ndash; https://mvnrepository.com/artifact/org.apache.flink/flink-connector-elasticsearch &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.apache.flink</groupId>-->
+<!--			<artifactId>flink-connector-elasticsearch_2.11</artifactId>-->
+<!--			<version>1.8.2</version>-->
+<!--		</dependency>-->
+
+
+<!--		&lt;!&ndash; https://mvnrepository.com/artifact/org.elasticsearch.client/elasticsearch-rest-high-level-client &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.elasticsearch.client</groupId>-->
+<!--			<artifactId>elasticsearch-rest-high-level-client</artifactId>-->
+<!--			<version>7.4.2</version>-->
+<!--		</dependency>-->
+
 
 		<!-- Add logging framework, to produce console output when running in the IDE. -->
 		<!-- These dependencies are excluded from the application JAR by default. -->
@@ -140,6 +170,7 @@ under the License.
 									<exclude>log4j:*</exclude>
 								</excludes>
 							</artifactSet>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<filters>
 								<filter>
 									<!-- Do not copy the signatures in the META-INF folder.
