@@ -60,7 +60,7 @@ public class StreamingCEPMonitoringJob {
 
         DataStream<Tuple4<String, String, String,String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeWarning());
 
-        warnings.print();
+        //warnings.print();
         warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
         env.execute("");
     }
@@ -75,7 +75,14 @@ public class StreamingCEPMonitoringJob {
             String themes = first.getV1Themes();
             String orgThemes = "";
             for(String theme : themes.split(";")) {
-                if(theme.startsWith("ECON_") || theme.startsWith("ENV_") ) {
+                if(theme.startsWith("ECON_") || theme.startsWith("ENV_") || theme.equals("DELAY")
+                || theme.equals("BAN") || theme.equals("CORRUPTION") || (theme.equals("FUELPRICES"))
+                || theme.equals("GRIEVANCES")|| theme.equals("INFO_HOAX") || theme.equals("INFO_RUMOR")
+                || theme.equals("LEGALIZE") || theme.equals("LEGISLATION") || theme.equals("MOVEMENT_OTHER")
+                || theme.equals("POWER_OUTAGE") || theme.equals("PROTEST") || theme.equals("SANCTIONS")
+                || theme.equals("SCANDAL") || theme.equals("SLFID_MINERAL_RESOURCES") || theme.equals("SLFID_NATURAL_RESOURCES")
+                || theme.equals("TRANSPARENCY") || theme.equals("TRIAL") || theme.equals("UNSAFE_WORK_ENVIRONMENT")
+                || theme.equals("WHISTLEBLOWER")) {
                     orgThemes = orgThemes + theme + ", ";
                 }
             }
@@ -93,14 +100,12 @@ public class StreamingCEPMonitoringJob {
         public boolean filter(GDELTGkgData event) {
             String orgList = event.getV1Organizations();
             Double tone = event.getV15Tone();
-            if (orgList.contains("siemens") ||
-                    orgList.contains("huawei") ||
-                    orgList.contains("volkswagen") ||
-                    orgList.contains("samsung") ||
-                    orgList.contains("dupont") ||
-                    orgList.contains("lufthansa") ||
-                    orgList.contains("airbus") ||
-                    orgList.contains("toyota")) {
+            if ((orgList.toLowerCase().contains("qualcomm") ||
+                    orgList.toLowerCase().contains("snapdragon") ||
+                    orgList.toLowerCase().contains("entegris") ||
+                    orgList.toLowerCase().contains("samsung") ||
+                    //orgList.toLowerCase().contains("exynnos") ||
+                    orgList.toLowerCase().contains("tsmc")) && tone <= 0) {
                 return true;
             } else {
                 return false;
