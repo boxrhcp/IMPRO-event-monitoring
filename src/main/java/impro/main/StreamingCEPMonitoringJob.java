@@ -1,5 +1,6 @@
 package impro.main;
 
+import impro.connectors.sinks.ElasticsearchStoreSink;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -58,11 +59,15 @@ public class StreamingCEPMonitoringJob {
 
         PatternStream<GDELTGkgData> patternMessageTypeWarning = CEP.pattern(GkgOrganizationsData, warningPattern);
 
-        DataStream<Tuple4<String, String, String,String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeWarning());
+        DataStream<Tuple4<String, String, String, String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeWarning());
 
         //warnings.print();
         warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
-        env.execute("");
+
+        ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
+        warnings.addSink(esStoreSink.getEsSink());
+
+        env.execute("CPU Events processing and storing");
     }
 
     private static class GenerateMessageTypeWarning implements PatternSelectFunction<GDELTGkgData, Tuple4<String,String, String,String>> {
