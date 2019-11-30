@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ElasticsearchStoreSink {
-    private final static String ES_HOST = "ec2-52-59-250-80.eu-central-1.compute.amazonaws.com";
+    private final static String ES_HOST = "ec2-18-194-127-15.eu-central-1.compute.amazonaws.com";
     private final static int ES_PORT = 9200;
     private final static String ES_PROTOCOL = "http";
 
