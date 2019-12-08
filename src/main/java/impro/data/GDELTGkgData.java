@@ -22,15 +22,15 @@ public class GDELTGkgData {
     private String V1Organizations;
     private String V2EnhancedOrganizations;
     private Double V15Tone;
-    /*private String V21EnhancedDates;
+   /*private String V21AllNames;
+    private String V21Amounts;
+    private String V21EnhancedDates;
     private String V2GCAM;
     private String V21SharingImage;
     private String V21RelatedImages;
     private String V21SocialImageEmbeds;
     private String V21SocialVideoEmbeds;
     private String V21Quotations;
-    private String V21AllNames;
-    private String V21Amounts;
     private String V21TranslationInfo;
     private String V2ExtrasXml;*/
 
@@ -53,7 +53,9 @@ public class GDELTGkgData {
             String V2EnhancedPersons,
             String V1Organizations,
             String V2EnhancedOrganizations,
-            Double V15Tone/*,
+            Double V15Tone
+           /* String V21AllNames,
+            String V21Amounts,
             String V21EnhancedDates,
             String V2GCAM,
             String V21SharingImage,
@@ -61,8 +63,6 @@ public class GDELTGkgData {
             String V21SocialImageEmbeds,
             String V21SocialVideoEmbeds,
             String V21Quotations,
-            String V21AllNames,
-            String V21Amounts,
             String V21TranslationInfo,
             String V2ExtrasXml*/) {
         this.key = key;
@@ -83,6 +83,8 @@ public class GDELTGkgData {
         this.V1Organizations = V1Organizations;
         this.V2EnhancedOrganizations = V2EnhancedOrganizations;
         this.V15Tone = V15Tone;
+        /*this.V21AllNames = V21AllNames;
+        this.V21Amounts = V21Amounts;*/
         /*this.V21EnhancedDates = V21EnhancedDates;
         this.V2GCAM = V2GCAM;
         this.V21SharingImage = V21SharingImage;
@@ -90,8 +92,6 @@ public class GDELTGkgData {
         this.V21SocialImageEmbeds = V21SocialImageEmbeds;
         this.V21SocialVideoEmbeds = V21SocialVideoEmbeds;
         this.V21Quotations = V21Quotations;
-        this.V21AllNames = V21AllNames;
-        this.V21Amounts = V21Amounts;
         this.V21TranslationInfo = V21TranslationInfo;
         this.V2ExtrasXml = V2ExtrasXml;*/
     }
@@ -103,21 +103,40 @@ public class GDELTGkgData {
     public String getKey() {
         return key;
     }
+
     public Date getV21Date() {
         return V21Date;
     }
+
     public String getV1Themes() {
         return V1Themes;
     }
-    public String getV1Organizations() { return V1Organizations; }
 
-    public String getV2SourceCommonName() { return V2SourceCommonName; }
+    public String getV1Organizations() {
+        return V1Organizations;
+    }
 
-    public String getGkgRecordId() { return gkgRecordId; }
+    public String getV2SourceCommonName() {
+        return V2SourceCommonName;
+    }
 
-    public Double getV15Tone() { return V15Tone; }
+    public String getGkgRecordId() {
+        return gkgRecordId;
+    }
 
-    public String toString(){
+    public Double getV15Tone() {
+        return V15Tone;
+    }
+
+   /* public String getV21AllNames() {
+        return V21AllNames;
+    }
+
+    public String getV21Amounts() {
+        return V21Amounts;
+    }*/
+
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(gkgRecordId).append(",");
         sb.append(V21Date).append(",");
@@ -132,6 +151,8 @@ public class GDELTGkgData {
         sb.append(V1Organizations).append(",");
         sb.append(V2EnhancedOrganizations).append(",");
         sb.append(V15Tone);
+        /*sb.append(V21AllNames).append(",");
+        sb.append(V21Amounts);*/
 
         return sb.toString();
     }
