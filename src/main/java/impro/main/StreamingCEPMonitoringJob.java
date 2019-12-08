@@ -65,7 +65,9 @@ public class StreamingCEPMonitoringJob {
         warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
 
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
-        warnings.addSink(esStoreSink.getEsSink());
+        if (esStoreSink.isOnline()) {
+            warnings.addSink(esStoreSink.getEsSink());
+        }
 
         env.execute("CPU Events processing and storing");
     }
