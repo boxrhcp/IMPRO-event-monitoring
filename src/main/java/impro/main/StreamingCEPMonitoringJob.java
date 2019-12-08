@@ -3,6 +3,7 @@ package impro.main;
 import impro.connectors.sinks.ElasticsearchStoreSink;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternSelectFunction;
@@ -53,24 +54,20 @@ public class StreamingCEPMonitoringJob {
                     @Override
                     public boolean filter(GDELTGkgData event, Context<GDELTGkgData> context) throws Exception {
                         String themes = event.getV1Themes();
-                        if (themes.contains("ECON_") || themes.contains("ENV_") || themes.contains("DELAY")
+                        //if (themes.contains("ECON_") ) {
+                        return themes.contains("ECON_") || themes.contains("ENV_") || themes.contains("DELAY")
                                 || themes.contains("BAN") || themes.contains("CORRUPTION") || (themes.contains("FUELPRICES"))
                                 || themes.contains("GRIEVANCES") || themes.contains("INFO_HOAX") || themes.contains("INFO_RUMOR")
                                 || themes.contains("LEGALIZE") || themes.contains("LEGISLATION") || themes.contains("MOVEMENT_OTHER")
                                 || themes.contains("POWER_OUTAGE") || themes.contains("PROTEST") || themes.contains("SANCTIONS")
                                 || themes.contains("SCANDAL") || themes.contains("SLFID_MINERAL_RESOURCES") || themes.contains("SLFID_NATURAL_RESOURCES")
                                 || themes.contains("TRANSPARENCY") || themes.contains("TRIAL") || themes.contains("UNSAFE_WORK_ENVIRONMENT")
-                                || themes.contains("WHISTLEBLOWER")|| themes.equals("ECON_BANKRUPTCY") || themes.contains("ECON_BOYCOTT")
+                                || themes.contains("WHISTLEBLOWER") || themes.equals("ECON_BANKRUPTCY") || themes.contains("ECON_BOYCOTT")
                                 || themes.contains("ECON_EARNINGSREPORT") || themes.contains("ECON_ENTREPRENEURSHIP") || themes.contains("ECON_FREETRADE")
                                 || themes.contains("ECON_MONOPOLY") || themes.contains("ECON_PRICECONTROL") || themes.contains("ECON_STOCKMARKET")
                                 || themes.contains("ECON_SUBSIDIES") || themes.contains("ECON_TAXATION") || themes.contains("ECON_TRADE_DISPUTE")
                                 || themes.contains("ECON_UNIONS") || themes.contains("ENV_METALS") || themes.contains("ENV_MINING")
-                                || themes.contains("NEGOTIATIONS")) {
-                            //if (themes.contains("ECON_") ) {
-                            return true;
-                        } else {
-                            return false;
-                        }
+                                || themes.contains("NEGOTIATIONS");
                     }
                 }).within(Time.days(5));
 
@@ -93,7 +90,7 @@ public class StreamingCEPMonitoringJob {
     private static class GenerateMessageTypeWarning implements PatternSelectFunction<GDELTGkgData, Tuple5<String, String, String, String, String>> {
         @Override
         public Tuple5<String, String, String, String, String> select(Map<String, List<GDELTGkgData>> pattern) throws Exception {
-            GDELTGkgData first = (GDELTGkgData) pattern.get("first").get(0);
+            GDELTGkgData first = pattern.get("first").get(0);
 
             Date date = first.getV21Date();
             // filter the Themes
@@ -135,16 +132,12 @@ public class StreamingCEPMonitoringJob {
         public boolean filter(GDELTGkgData event) {
             String orgList = event.getV1Organizations();
             Double tone = event.getV15Tone();
-            if ((orgList.toLowerCase().contains("qualcomm") ||
+            return (orgList.toLowerCase().contains("qualcomm") ||
                     orgList.toLowerCase().contains("snapdragon") ||
                     orgList.toLowerCase().contains("entegris") ||
                     orgList.toLowerCase().contains("samsung") ||
                     //orgList.toLowerCase().contains("exynnos") ||
-                    orgList.toLowerCase().contains("tsmc")) && tone <= 0) {
-                return true;
-            } else {
-                return false;
-            }
+                    orgList.toLowerCase().contains("tsmc")) && tone <= 0;
         }
     }
 
