@@ -48,11 +48,11 @@ public class StreamingCEPMonitoringJob {
         DataStream<GDELTGkgData> gdeltGkgData = env.readTextFile(params.get("input"))
                 .map(new ParseGdeltGkgDataToBin())
                 .assignTimestampsAndWatermarks(new GkgDataAssigner());
-
-        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisations());
+        rawMaterials(gdeltGkgData);
+        /*DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisations());
         //GkgOrganizationsData.print();
 
-        Pattern<GDELTGkgData, ?> warningPattern = Pattern.<GDELTGkgData>begin("first")
+        Pattern<GDELTGkgData, ?> patternRaw = Pattern.<GDELTGkgData>begin("first")
                 .where(new IterativeCondition<GDELTGkgData>() {
                     @Override
                     public boolean filter(GDELTGkgData event, Context<GDELTGkgData> context) throws Exception {
@@ -83,17 +83,63 @@ public class StreamingCEPMonitoringJob {
                 }).within(Time.days(2)).timesOrMore(2);
 
 
-        PatternStream<GDELTGkgData> patternMessageTypeWarning = CEP.pattern(GkgOrganizationsData, warningPattern);
+        PatternStream<GDELTGkgData> patternMessageTypeWarning = CEP.pattern(GkgOrganizationsData, patternRaw);
 
         DataStream<Tuple5<String, String, String, String, String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeWarning());
 
         //warnings.print();
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
         warnings.addSink(esStoreSink.getEsSink());
-        
-        warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
+
+        warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);*/
 
         env.execute("CPU Events processing and storing");
+    }
+
+    private static void rawMaterials(DataStream<GDELTGkgData> gdeltGkgData){
+        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisations());
+        //GkgOrganizationsData.print();
+
+        Pattern<GDELTGkgData, ?> patternRaw = Pattern.<GDELTGkgData>begin("first")
+                .where(new IterativeCondition<GDELTGkgData>() {
+                    @Override
+                    public boolean filter(GDELTGkgData event, Context<GDELTGkgData> context) throws Exception {
+                        String themes = event.getV1Themes();
+                        Date eventDate = event.getV21Date();
+                        Date start = new SimpleDateFormat("yyyyMMddHHmm").parse("201911290000");
+                        Date end = new SimpleDateFormat("yyyyMMddHHmm").parse("201912012359");
+                        if (( themes.contains("DELAY")
+                                || themes.contains("BAN") || themes.contains("CORRUPTION") || (themes.contains("FUELPRICES"))
+                                || themes.contains("GRIEVANCES") || themes.contains("INFO_HOAX") || themes.contains("INFO_RUMOR")
+                                || themes.contains("LEGALIZE") || themes.contains("LEGISLATION") || themes.contains("MOVEMENT_OTHER")
+                                || themes.contains("POWER_OUTAGE") || themes.contains("PROTEST") || themes.contains("SANCTIONS")
+                                || themes.contains("SCANDAL") || themes.contains("SLFID_MINERAL_RESOURCES") || themes.contains("SLFID_NATURAL_RESOURCES")
+                                || themes.contains("TRANSPARENCY") || themes.contains("TRIAL") || themes.contains("UNSAFE_WORK_ENVIRONMENT")
+                                || themes.contains("WHISTLEBLOWER")|| themes.equals("ECON_BANKRUPTCY") || themes.contains("ECON_BOYCOTT")
+                                || themes.contains("ECON_EARNINGSREPORT") || themes.contains("ECON_ENTREPRENEURSHIP") || themes.contains("ECON_FREETRADE")
+                                || themes.contains("ECON_MONOPOLY") || themes.contains("ECON_PRICECONTROL") || themes.contains("ECON_STOCKMARKET")
+                                || themes.contains("ECON_SUBSIDIES") || themes.contains("ECON_TAXATION") || themes.contains("ECON_TRADE_DISPUTE")
+                                || themes.contains("ECON_UNIONS") || themes.contains("ENV_METALS") || themes.contains("ENV_MINING")
+                                || themes.contains("NEGOTIATIONS")) && event.getV15Tone() <= 0 && start.compareTo(eventDate)<0
+                                && end.compareTo(eventDate) > 0) {
+                            //if (themes.contains("ECON_") ) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                }).within(Time.days(2)).timesOrMore(2);
+
+
+        PatternStream<GDELTGkgData> patternMessageTypeWarning = CEP.pattern(GkgOrganizationsData, patternRaw);
+
+        DataStream<Tuple5<String, String, String, String, String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeWarning());
+
+        //warnings.print();
+        ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
+        warnings.addSink(esStoreSink.getEsSink());
+        //warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
+
     }
 
     private static class GenerateMessageTypeWarning implements PatternSelectFunction<GDELTGkgData, Tuple5<String, String, String, String, String>> {
