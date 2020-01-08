@@ -21,6 +21,8 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import impro.data.GDELTGkgData;
 import impro.util.ParseGdeltGkgDataToBin;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +57,10 @@ public class StreamingCEPMonitoringJob {
                     @Override
                     public boolean filter(GDELTGkgData event, Context<GDELTGkgData> context) throws Exception {
                         String themes = event.getV1Themes();
-                        if (themes.contains("ECON_") || themes.contains("ENV_") || themes.contains("DELAY")
+                        Date eventDate = event.getV21Date();
+                        Date start = new SimpleDateFormat("yyyyMMddHHmm").parse("201911290000");
+                        Date end = new SimpleDateFormat("yyyyMMddHHmm").parse("201912012359");
+                        if (( themes.contains("DELAY")
                                 || themes.contains("BAN") || themes.contains("CORRUPTION") || (themes.contains("FUELPRICES"))
                                 || themes.contains("GRIEVANCES") || themes.contains("INFO_HOAX") || themes.contains("INFO_RUMOR")
                                 || themes.contains("LEGALIZE") || themes.contains("LEGISLATION") || themes.contains("MOVEMENT_OTHER")
@@ -67,14 +72,15 @@ public class StreamingCEPMonitoringJob {
                                 || themes.contains("ECON_MONOPOLY") || themes.contains("ECON_PRICECONTROL") || themes.contains("ECON_STOCKMARKET")
                                 || themes.contains("ECON_SUBSIDIES") || themes.contains("ECON_TAXATION") || themes.contains("ECON_TRADE_DISPUTE")
                                 || themes.contains("ECON_UNIONS") || themes.contains("ENV_METALS") || themes.contains("ENV_MINING")
-                                || themes.contains("NEGOTIATIONS")) {
+                                || themes.contains("NEGOTIATIONS")) && event.getV15Tone() <= 0 && start.compareTo(eventDate)<0
+                                && end.compareTo(eventDate) > 0) {
                             //if (themes.contains("ECON_") ) {
                             return true;
                         } else {
                             return false;
                         }
                     }
-                }).within(Time.days(5));
+                }).within(Time.days(2)).timesOrMore(2);
 
 
         PatternStream<GDELTGkgData> patternMessageTypeWarning = CEP.pattern(GkgOrganizationsData, warningPattern);
@@ -82,19 +88,18 @@ public class StreamingCEPMonitoringJob {
         DataStream<Tuple5<String, String, String, String, String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeWarning());
 
         //warnings.print();
+        ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
+        warnings.addSink(esStoreSink.getEsSink());
+        
         warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
-
-        //ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
-        //warnings.addSink(esStoreSink.getEsSink());
 
         env.execute("CPU Events processing and storing");
     }
 
     private static class GenerateMessageTypeWarning implements PatternSelectFunction<GDELTGkgData, Tuple5<String, String, String, String, String>> {
         @Override
-        public Tuple5<String, String, String, String, String> select(Map<String, List<GDELTGkgData>> pattern) throws Exception {
+        public Tuple5<String, String, String, String, String> select(Map<String, List<GDELTGkgData>> pattern) {
             GDELTGkgData first = (GDELTGkgData) pattern.get("first").get(0);
-
             Date date = first.getV21Date();
             // filter the Themes
             String themes = first.getV1Themes();
@@ -125,8 +130,8 @@ public class StreamingCEPMonitoringJob {
             //System.out.println("  WARN:" + first.toString());
             /*return new Tuple5<String, String, String, String, String>(date.toString(), first.getV1Organizations(),
                     orgThemes, first.getV21AllNames(), first.getV21Amounts());*/
-            return new Tuple5<String, String, String, String, String>(date.toString(), first.getV1Organizations(),
-                    orgThemes, "",""/*first.getV21AllNames(), first.getV21Amounts()*/);
+            return new Tuple5<String, String, String, String, String>(date.toString(), first.getGkgRecordId(),first.getV1Organizations(),
+                    orgThemes,""/*first.getV21AllNames(), first.getV21Amounts()*/);
         }
     }
 
@@ -134,13 +139,16 @@ public class StreamingCEPMonitoringJob {
         @Override
         public boolean filter(GDELTGkgData event) {
             String orgList = event.getV1Organizations();
-            Double tone = event.getV15Tone();
+            //Double tone = event.getV15Tone();
             if ((orgList.toLowerCase().contains("qualcomm") ||
                     orgList.toLowerCase().contains("snapdragon") ||
-                    orgList.toLowerCase().contains("entegris") ||
                     orgList.toLowerCase().contains("samsung") ||
+                    orgList.toLowerCase().contains("atheros") ||
+                    orgList.toLowerCase().contains("wilocity") ||
+                    orgList.toLowerCase().contains("airgo") ||
+                    orgList.toLowerCase().contains("nujira") ||
                     //orgList.toLowerCase().contains("exynnos") ||
-                    orgList.toLowerCase().contains("tsmc")) && tone <= 0) {
+                    orgList.toLowerCase().contains("tsmc")) ) {
                 return true;
             } else {
                 return false;

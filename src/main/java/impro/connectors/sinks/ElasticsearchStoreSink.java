@@ -2,7 +2,7 @@ package impro.connectors.sinks;
 
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunction;
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ElasticsearchStoreSink {
-    private final static String ES_HOST = "ec2-18-194-127-15.eu-central-1.compute.amazonaws.com";
+    private final static String ES_HOST = "localhost";
     private final static int ES_PORT = 9200;
     private final static String ES_PROTOCOL = "http";
 
-    private ElasticsearchSink<Tuple4<String, String, String ,String>> esSink;
+    private ElasticsearchSink<Tuple5<String, String, String ,String, String>> esSink;
 
     public ElasticsearchStoreSink() {
         List<HttpHost> httpHosts = new ArrayList<>();
@@ -40,9 +40,9 @@ public class ElasticsearchStoreSink {
 //        RequestOptions COMMON_OPTIONS = reqOptBuilder.build();
 
 
-        ElasticsearchSink.Builder<Tuple4<String, String, String, String>> esSinkBuilder = new ElasticsearchSink.Builder<>(
+        ElasticsearchSink.Builder<Tuple5<String, String, String, String, String>> esSinkBuilder = new ElasticsearchSink.Builder<>(
         httpHosts,
-        (Tuple4<String, String, String, String> element, RuntimeContext ctx, RequestIndexer indexer) -> {
+        (Tuple5<String, String, String, String, String> element, RuntimeContext ctx, RequestIndexer indexer) -> {
             indexer.add(createIndexRequest(element));
         });
 
@@ -87,10 +87,10 @@ public class ElasticsearchStoreSink {
 //        );
     }
 
-    private static IndexRequest createIndexRequest(Tuple4<String, String, String, String> event) {
+    private static IndexRequest createIndexRequest(Tuple5<String, String, String, String, String> event) {
         Map<String, String> json = new HashMap<>();
-        json.put("event-type", event.f0);
-        json.put("date", event.f1);
+        json.put("date", event.f0);
+        json.put("recordId", event.f1);
         json.put("organizations", event.f2);
         json.put("themes", event.f3);
 
@@ -121,7 +121,7 @@ public class ElasticsearchStoreSink {
 //        }
 //    }
 
-    public ElasticsearchSink<Tuple4<String, String, String, String>> getEsSink() {
+    public ElasticsearchSink<Tuple5<String, String, String, String, String>> getEsSink() {
         return esSink;
     }
 
