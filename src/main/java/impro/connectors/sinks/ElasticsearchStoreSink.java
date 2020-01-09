@@ -1,9 +1,11 @@
 package impro.connectors.sinks;
 
 import org.apache.flink.api.common.functions.RuntimeContext;
+
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
 import org.apache.flink.streaming.connectors.elasticsearch6.ElasticsearchSink;
 import org.apache.http.HttpHost;
@@ -67,14 +69,16 @@ public class ElasticsearchStoreSink {
 
     private static IndexRequest createIndexRequest(Tuple5<String, String, String, String, String> event) {
         Map<String, String> json = new HashMap<>();
-        json.put("event-type", event.f0);
-        json.put("date", event.f1);
+        json.put("date", event.f0);
+        json.put("recordId", event.f1);
         json.put("organizations", event.f2);
         json.put("themes", event.f3);
+        json.put("section", event.f4);
 
         return Requests.indexRequest()
-                .index("cpu-related-events")
-                .type("impactful-events")
+                .index("supply-chain-events")
+                .type("disruption-events")
+                .id(event.f1)
                 .source(json);
     }
 
@@ -99,7 +103,7 @@ public class ElasticsearchStoreSink {
 //        }
 //    }
 
-    public SinkFunction<Tuple5<String, String, String, String, String>> getEsSink() {
+    public ElasticsearchSink<Tuple5<String, String, String, String, String>> getEsSink() {
         return esSink;
     }
 
