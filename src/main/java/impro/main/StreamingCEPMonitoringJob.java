@@ -139,7 +139,7 @@ public class StreamingCEPMonitoringJob {
                                 || themes.contains("SELF_IDENTIFIED_ENVIRON_DISASTER")|| themes.contains("SELF_IDENTIFIED_HUMAN_RIGHTS")|| themes.contains("SLFID_MINERAL_RESOURCES")
                                 || themes.contains("SLFID_NATURAL_RESOURCES")|| themes.contains("SOC_SUSPICIOUSACTIVITIES")|| themes.contains("STATE_OF_EMERGENCY")
                                 || themes.contains("STRIKE")|| themes.contains("UNREST_CLOSINGBORDER")|| themes.contains("UNSAFE_WORK_ENVIRONMENT")
-                                || themes.contains("VETO")) && event.getV15Tone() <= 0 && start.compareTo(eventDate) < 0
+                                || themes.contains("VETO")) /*&& event.getV15Tone() <= 0 */&& start.compareTo(eventDate) < 0
                                 && end.compareTo(eventDate) > 0) {
                             //if (themes.contains("ECON_") ) {
                             return true;
