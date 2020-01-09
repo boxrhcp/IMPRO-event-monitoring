@@ -93,10 +93,12 @@ public class ElasticsearchStoreSink {
         json.put("recordId", event.f1);
         json.put("organizations", event.f2);
         json.put("themes", event.f3);
+        json.put("section", event.f4);
 
         return Requests.indexRequest()
-                .index("cpu-related-events")
-                .type("impactful-events")
+                .index("supply-chain-events")
+                .type("disruption-events")
+                .id(event.f1)
                 .source(json);
     }
 
