@@ -141,10 +141,10 @@ public class StreamingCEPMonitoringJob {
                                 || themes.contains("STRIKE")|| themes.contains("UNREST_CLOSINGBORDER")|| themes.contains("UNSAFE_WORK_ENVIRONMENT")
                                 || themes.contains("VETO")) /*&& event.getV15Tone() <= 0 */&& start.compareTo(eventDate) < 0
                                 && end.compareTo(eventDate) > 0) {
-                            //if (themes.contains("ECON_") ) {
+
                             return true;
                         } else {
-                            return false;
+                            return true;
                         }
                     }
                 });
