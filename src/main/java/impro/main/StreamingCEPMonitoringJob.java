@@ -1,7 +1,6 @@
 package impro.main;
 
 import impro.connectors.sinks.ElasticsearchStoreSink;
-import jdk.internal.jline.internal.Log;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.tuple.Tuple5;
@@ -61,21 +60,27 @@ public class StreamingCEPMonitoringJob {
                     @Override
                     public boolean filter(GDELTGkgData event, Context<GDELTGkgData> context) throws Exception {
                         String themes = event.getV1Themes();
+<<<<<<< HEAD
                         Date eventDate = event.getV21Date();
                         Date start = new SimpleDateFormat("yyyyMMddHHmm").parse("201911290000");
                         Date end = new SimpleDateFormat("yyyyMMddHHmm").parse("201912012359");
                         if (( themes.contains("DELAY")
+=======
+                        //if (themes.contains("ECON_") ) {
+                        return themes.contains("ECON_") || themes.contains("ENV_") || themes.contains("DELAY")
+>>>>>>> master
                                 || themes.contains("BAN") || themes.contains("CORRUPTION") || (themes.contains("FUELPRICES"))
                                 || themes.contains("GRIEVANCES") || themes.contains("INFO_HOAX") || themes.contains("INFO_RUMOR")
                                 || themes.contains("LEGALIZE") || themes.contains("LEGISLATION") || themes.contains("MOVEMENT_OTHER")
                                 || themes.contains("POWER_OUTAGE") || themes.contains("PROTEST") || themes.contains("SANCTIONS")
                                 || themes.contains("SCANDAL") || themes.contains("SLFID_MINERAL_RESOURCES") || themes.contains("SLFID_NATURAL_RESOURCES")
                                 || themes.contains("TRANSPARENCY") || themes.contains("TRIAL") || themes.contains("UNSAFE_WORK_ENVIRONMENT")
-                                || themes.contains("WHISTLEBLOWER")|| themes.equals("ECON_BANKRUPTCY") || themes.contains("ECON_BOYCOTT")
+                                || themes.contains("WHISTLEBLOWER") || themes.equals("ECON_BANKRUPTCY") || themes.contains("ECON_BOYCOTT")
                                 || themes.contains("ECON_EARNINGSREPORT") || themes.contains("ECON_ENTREPRENEURSHIP") || themes.contains("ECON_FREETRADE")
                                 || themes.contains("ECON_MONOPOLY") || themes.contains("ECON_PRICECONTROL") || themes.contains("ECON_STOCKMARKET")
                                 || themes.contains("ECON_SUBSIDIES") || themes.contains("ECON_TAXATION") || themes.contains("ECON_TRADE_DISPUTE")
                                 || themes.contains("ECON_UNIONS") || themes.contains("ENV_METALS") || themes.contains("ENV_MINING")
+<<<<<<< HEAD
                                 || themes.contains("NEGOTIATIONS")) && event.getV15Tone() <= 0 && start.compareTo(eventDate)<0
                                 && end.compareTo(eventDate) > 0) {
                             //if (themes.contains("ECON_") ) {
@@ -83,6 +88,9 @@ public class StreamingCEPMonitoringJob {
                         } else {
                             return false;
                         }
+=======
+                                || themes.contains("NEGOTIATIONS");
+>>>>>>> master
                     }
                 });
 
@@ -95,8 +103,8 @@ public class StreamingCEPMonitoringJob {
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
         warnings.addSink(esStoreSink.getEsSink());
 
-        warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);*/
 
+        warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);*/
         env.execute("CPU Events processing and storing");
     }
 
@@ -146,9 +154,10 @@ public class StreamingCEPMonitoringJob {
 
         DataStream<Tuple5<String, String, String, String, String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeRaw());
 
-        //warnings.print();
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
-        warnings.addSink(esStoreSink.getEsSink());
+        if (esStoreSink.isOnline()) {
+            warnings.addSink(esStoreSink.getEsSink());
+        }
         //warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
 
     }
@@ -199,9 +208,10 @@ public class StreamingCEPMonitoringJob {
 
         DataStream<Tuple5<String, String, String, String, String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeIntermediate());
 
-        //warnings.print();
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
-        warnings.addSink(esStoreSink.getEsSink());
+        if (esStoreSink.isOnline()) {
+            warnings.addSink(esStoreSink.getEsSink());
+        }
         //warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
 
     }
@@ -246,9 +256,10 @@ public class StreamingCEPMonitoringJob {
 
         DataStream<Tuple5<String, String, String, String, String>> warnings = patternMessageTypeWarning.select(new GenerateMessageTypeEnd());
 
-        //warnings.print();
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
-        warnings.addSink(esStoreSink.getEsSink());
+        if (esStoreSink.isOnline()) {
+            warnings.addSink(esStoreSink.getEsSink());
+        }
         //warnings.writeAsCsv(params.get("output"), FileSystem.WriteMode.OVERWRITE);
 
     }
@@ -291,6 +302,7 @@ public class StreamingCEPMonitoringJob {
                     themes, "RAW SECTION"/*first.getV21AllNames(), first.getV21Amounts()*/);
         }
     }
+
 
     private static class GenerateMessageTypeIntermediate implements PatternSelectFunction<GDELTGkgData, Tuple5<String, String, String, String, String>> {
         @Override
@@ -400,6 +412,8 @@ public class StreamingCEPMonitoringJob {
     }
 
 
+
+
     static class GkgDataAssigner implements AssignerWithPunctuatedWatermarks<GDELTGkgData> {
         @Override
         public long extractTimestamp(GDELTGkgData event, long previousElementTimestamp) {
@@ -409,7 +423,7 @@ public class StreamingCEPMonitoringJob {
         @Override
         public Watermark checkAndGetNextWatermark(GDELTGkgData event, long extractedTimestamp) {
             // simply emit a watermark with every event
-            return new Watermark(extractedTimestamp - 20000);
+            return new Watermark(extractedTimestamp - 20000   );
             //return new Watermark(extractedTimestamp);
         }
     }
