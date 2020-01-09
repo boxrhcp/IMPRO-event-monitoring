@@ -101,7 +101,7 @@ public class StreamingCEPMonitoringJob {
     }
 
     private static void rawMaterials(DataStream<GDELTGkgData> gdeltGkgData) {
-        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisations());
+        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData;
         //GkgOrganizationsData.print();
 
         Pattern<GDELTGkgData, ?> patternRaw = Pattern.<GDELTGkgData>begin("first")
@@ -154,7 +154,7 @@ public class StreamingCEPMonitoringJob {
     }
 
     private static void intermediateChain(DataStream<GDELTGkgData> gdeltGkgData) {
-        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisations());
+        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisationsIntermediate());
         //GkgOrganizationsData.print();
 
         Pattern<GDELTGkgData, ?> patternRaw = Pattern.<GDELTGkgData>begin("first")
@@ -207,7 +207,7 @@ public class StreamingCEPMonitoringJob {
     }
 
     private static void endChain(DataStream<GDELTGkgData> gdeltGkgData) {
-        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisations());
+        DataStream<GDELTGkgData> GkgOrganizationsData = gdeltGkgData.filter(new FilterOrganisationsEnd());
         //GkgOrganizationsData.print();
 
         Pattern<GDELTGkgData, ?> patternRaw = Pattern.<GDELTGkgData>begin("first")
@@ -370,20 +370,28 @@ public class StreamingCEPMonitoringJob {
         }
     }
 
-    public static class FilterOrganisations implements FilterFunction<GDELTGkgData> {
+    public static class FilterOrganisationsIntermediate implements FilterFunction<GDELTGkgData> {
         @Override
         public boolean filter(GDELTGkgData event) {
             String orgList = event.getV1Organizations();
             //Double tone = event.getV15Tone();
-            if ((orgList.toLowerCase().contains("qualcomm") ||
-                    orgList.toLowerCase().contains("snapdragon") ||
-                    orgList.toLowerCase().contains("samsung") ||
-                    orgList.toLowerCase().contains("atheros") ||
-                    orgList.toLowerCase().contains("wilocity") ||
-                    orgList.toLowerCase().contains("airgo") ||
-                    orgList.toLowerCase().contains("nujira") ||
-                    //orgList.toLowerCase().contains("exynnos") ||
-                    orgList.toLowerCase().contains("tsmc"))) {
+            if ((orgList.toLowerCase().contains("samsung") ||
+                    orgList.toLowerCase().contains("tsmc") ||
+                    orgList.toLowerCase().contains("taiwan semiconductor manufacturing company") ||
+                    orgList.toLowerCase().contains("qualcomm"))) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    public static class FilterOrganisationsEnd implements FilterFunction<GDELTGkgData> {
+        @Override
+        public boolean filter(GDELTGkgData event) {
+            String orgList = event.getV1Organizations();
+            //Double tone = event.getV15Tone();
+            if ((orgList.toLowerCase().contains("qualcomm"))) {
                 return true;
             } else {
                 return false;
