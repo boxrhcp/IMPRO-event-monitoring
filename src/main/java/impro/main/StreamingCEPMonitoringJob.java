@@ -35,8 +35,8 @@ import java.util.logging.Logger;
  */
 
 public class StreamingCEPMonitoringJob {
-    public static String startDate = "201911290000";
-    public static String endDate = "201912012359";
+    public static String startDate = "201902150000";
+    public static String endDate = "201902172359";
 
     public static Logger log = Logger.getGlobal();
 
