@@ -21,8 +21,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class ElasticsearchStoreSink {
+    public static Logger log = Logger.getGlobal();
+
     private final static String ES_HOST = "localhost";
     private final static int ES_PORT = 9200;
     private final static String ES_PROTOCOL = "http";
@@ -114,9 +117,11 @@ public class ElasticsearchStoreSink {
         ClusterHealthRequest request = new ClusterHealthRequest();
 
         try {
+            log.info("Saving filtered events to the ES cluster.");
             client.cluster().health(request, RequestOptions.DEFAULT);
             return true;
         } catch (IOException e) {
+            log.warning("Could not connect to the ES cluster. No data will be stored in ES.");
             return false;
         }
     }
