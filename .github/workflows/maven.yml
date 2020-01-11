@@ -4,6 +4,14 @@ on:
    branches: 
      - master
 
+jobs:
+ build:
+  runs-on: ubuntu-latest
+  
+  steps:
+   - name: Echo dummy message
+     run: echo "Runner execution"
+   
 #jobs:
  # build:
   #  runs-on: self-hosted
@@ -20,6 +28,3 @@ on:
        # cd /home/ubuntu/
         #./Downloads/flink-1.9.1/bin/flink run ./executables/impro-event-monitoring-0.1.jar \
          #            --input /home/ubuntu/source/ --output /home/ubuntu/results/results.csv
-
-        
-        
