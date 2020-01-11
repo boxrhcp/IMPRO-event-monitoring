@@ -135,7 +135,7 @@ public class StreamingCEPMonitoringJob {
                 }
             });
 
-        // Apply the defined pattern to the data
+        // Apply the defined CEP pattern to the data
         PatternStream<GDELTGkgData> relevantEvents = CEP.pattern(processedData, pattern);
         DataStream<Tuple5<String, String, String, String, String>> finalResults =
                 relevantEvents.select(new RelevantFields(chainSection.getChainSectionLabel()));
@@ -177,7 +177,6 @@ public class StreamingCEPMonitoringJob {
         @Override
         public boolean filter(GDELTGkgData event) {
             String orgList = event.getV1Organizations();
-
 
             return Arrays.stream(this.organizations).parallel().anyMatch(orgList.toLowerCase()::contains);
         }
