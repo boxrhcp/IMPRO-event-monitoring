@@ -1,11 +1,7 @@
 package impro.connectors.sinks;
 
 import org.apache.flink.api.common.functions.RuntimeContext;
-
-import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.tuple.Tuple5;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
 import org.apache.flink.streaming.connectors.elasticsearch6.ElasticsearchSink;
 import org.apache.http.HttpHost;
@@ -21,8 +17,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class ElasticsearchStoreSink {
+    public static Logger log = Logger.getGlobal();
+
     private final static String ES_HOST = "localhost";
     private final static int ES_PORT = 9200;
     private final static String ES_PROTOCOL = "http";
@@ -38,28 +37,6 @@ public class ElasticsearchStoreSink {
         (Tuple5<String, String, String, String, String> element, RuntimeContext ctx, RequestIndexer indexer) -> {
             indexer.add(createIndexRequest(element));
         });
-
-//        ElasticsearchSink.Builder<Tuple4<String, String, String, String>> esSinkBuilder;
-//        esSinkBuilder = new ElasticsearchSink.Builder<>(
-//                httpHosts,
-//                new ElasticsearchSinkFunction<Tuple4<String,String, String,String>>() {
-//                    public IndexRequest createIndexRequest(Tuple4<String,String, String,String> event) {
-//                        Map<String, String> json = new HashMap<>();
-//                        json.put("event-type", event.f0);
-//                        json.put("date", event.f1);
-//                        json.put("organizations", event.f2);
-//                        json.put("themes", event.f3);
-//
-//                        return Requests.indexRequest()
-//                                .index("cpu-related-events")
-//                                .source(json);
-//                    }
-//
-//                    @Override
-//                    public void process(Tuple4<String,String, String,String> event, RuntimeContext ctx, RequestIndexer indexer) {
-//                        indexer.add(createIndexRequest(event));
-//                    }
-//                });
 
         // configuration for the bulk requests; this instructs the sink to emit after every element, otherwise they would be buffered
         esSinkBuilder.setBulkFlushMaxActions(1);
@@ -82,27 +59,6 @@ public class ElasticsearchStoreSink {
                 .source(json);
     }
 
-//    public class EventInserter implements ElasticsearchSinkFunction<Tuple4<String, String, String, String>> {
-//
-//        public IndexRequest createIndexRequest(Tuple4<String, String, String, String> event) {
-//            Map<String, String> json = new HashMap<>();
-//            json.put("event-type", event.f0);
-//            json.put("date", event.f1);
-//            json.put("organizations", event.f2);
-//            json.put("themes", event.f3);
-//
-//            return Requests.indexRequest()
-//                    .index("cpu-related-events")
-//                    .type("impactful-events")
-//                    .source(json);
-//        }
-//
-//        @Override
-//        public void process(Tuple4<String, String, String, String> event, RuntimeContext ctx, RequestIndexer indexer) {
-//            indexer.add(createIndexRequest(event));
-//        }
-//    }
-
     public ElasticsearchSink<Tuple5<String, String, String, String, String>> getEsSink() {
         return esSink;
     }
@@ -114,11 +70,12 @@ public class ElasticsearchStoreSink {
         ClusterHealthRequest request = new ClusterHealthRequest();
 
         try {
+            log.info("Saving filtered events to the ES cluster.");
             client.cluster().health(request, RequestOptions.DEFAULT);
             return true;
         } catch (IOException e) {
+            log.warning("Could not connect to the ES cluster. No data will be stored in ES.");
             return false;
         }
     }
-
 }
