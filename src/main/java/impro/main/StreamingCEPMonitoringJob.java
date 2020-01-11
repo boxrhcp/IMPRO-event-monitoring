@@ -32,7 +32,6 @@ public class StreamingCEPMonitoringJob {
     private static Logger log = Logger.getGlobal();
 
     private static String rawChainSectionLabel = "RAW SECTION";
-    private static String[] rawChainOrganizationsFilter = {};
     private static String[] rawChainThemesFilter = {
             "ARMEDCONFLICT","BAN","BLACK_MARKET","BLOCKADE","CEASEFIRE","CLOSURE","CORRUPTION","DELAY",
             "ECON_BANKRUPTCY","ECON_BOYCOTT","ECON_FREETRADE","ECON_NATIONALIZE","ECON_PRICECONTROL","ECON_SUBSIDIES",
@@ -90,7 +89,7 @@ public class StreamingCEPMonitoringJob {
 
         ChainSection rawChain = new ChainSection(
                 rawChainSectionLabel,
-                rawChainOrganizationsFilter,
+                null,
                 rawChainThemesFilter);
         processChainSection(gdeltGkgData, rawChain);
 
@@ -110,27 +109,35 @@ public class StreamingCEPMonitoringJob {
     }
 
     private static void processChainSection(DataStream<GDELTGkgData> gdeltGkgData, ChainSection chainSection) {
-        String[] themesFilter = chainSection.getChainThemesFilter();
 
+        DataStream<GDELTGkgData> processedData = gdeltGkgData;
         // Filter organizations
-        DataStream<GDELTGkgData> GkgOrganizationsData =
-                gdeltGkgData.filter(new FilterOrganisations(chainSection.getChainOrganizationsFilter()));
+        if (chainSection.getChainOrganizationsFilter() != null) {
+            processedData = gdeltGkgData.filter(new FilterOrganisations(chainSection.getChainOrganizationsFilter()));
+        }
 
         // Filter themes with CEP
+        /* We have to extract the themes into an array first. Otherwise, Flink will throw an exception complaining that
+         * the object chainSection is not serializable.
+         * */
+        String[] themesFilter = chainSection.getChainThemesFilter();
         Pattern<GDELTGkgData, ?> pattern = Pattern.<GDELTGkgData>begin("first")
-                .where(new IterativeCondition<GDELTGkgData>() {
+            .where(new IterativeCondition<GDELTGkgData>() {
 
-            @Override
-            public boolean filter(GDELTGkgData event, Context<GDELTGkgData> context) {
-
-                String themes = event.getV1Themes();
-                return Arrays.stream(themesFilter).parallel().anyMatch(themes::contains)
-                        && event.getV15Tone() <= 0;
-            }
-        });
+                @Override
+                public boolean filter(GDELTGkgData event, Context<GDELTGkgData> context) {
+                    if (themesFilter == null) {
+                        return true;
+                    } else {
+                        String themes = event.getV1Themes();
+                        return Arrays.stream(themesFilter).parallel().anyMatch(themes::contains)
+                                && event.getV15Tone() <= 0;
+                    }
+                }
+            });
 
         // Apply the defined pattern to the data
-        PatternStream<GDELTGkgData> relevantEvents = CEP.pattern(GkgOrganizationsData, pattern);
+        PatternStream<GDELTGkgData> relevantEvents = CEP.pattern(processedData, pattern);
         DataStream<Tuple5<String, String, String, String, String>> finalResults =
                 relevantEvents.select(new RelevantFields(chainSection.getChainSectionLabel()));
 
@@ -186,9 +193,8 @@ public class StreamingCEPMonitoringJob {
         @Override
         public Watermark checkAndGetNextWatermark(GDELTGkgData event, long extractedTimestamp) {
             // simply emit a watermark with every event
-            return new Watermark(extractedTimestamp - 20000   );
+            return new Watermark(extractedTimestamp - 20000);
             //return new Watermark(extractedTimestamp);
         }
     }
-
 }
