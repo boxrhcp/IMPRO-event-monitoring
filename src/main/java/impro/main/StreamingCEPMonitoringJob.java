@@ -41,12 +41,14 @@ public class StreamingCEPMonitoringJob {
 
     public static void main(String[] args) throws Exception {
         final ParameterTool params = ParameterTool.fromArgs(args);
+        String inputPath = params.get("input");
+        inputPath = inputPath == null || inputPath.equals("") ? "/home/impro/impro-gdelt-downloader/csv" : inputPath;
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         // GKG Table
-        DataStream<GDELTGkgData> gdeltGkgData = env.readTextFile(params.get("input"))
+        DataStream<GDELTGkgData> gdeltGkgData = env.readTextFile(inputPath)
                 .map(new ParseGdeltGkgDataToBin())
                 .assignTimestampsAndWatermarks(new GkgDataAssigner());
         rawMaterials(gdeltGkgData);
@@ -139,8 +141,7 @@ public class StreamingCEPMonitoringJob {
                                 || themes.contains("SELF_IDENTIFIED_ENVIRON_DISASTER")|| themes.contains("SELF_IDENTIFIED_HUMAN_RIGHTS")|| themes.contains("SLFID_MINERAL_RESOURCES")
                                 || themes.contains("SLFID_NATURAL_RESOURCES")|| themes.contains("SOC_SUSPICIOUSACTIVITIES")|| themes.contains("STATE_OF_EMERGENCY")
                                 || themes.contains("STRIKE")|| themes.contains("UNREST_CLOSINGBORDER")|| themes.contains("UNSAFE_WORK_ENVIRONMENT")
-                                || themes.contains("VETO")) && event.getV15Tone() <= 0 && start.compareTo(eventDate) < 0
-                                && end.compareTo(eventDate) > 0) {
+                                || themes.contains("VETO")) && event.getV15Tone() <= 0 /* && start.compareTo(eventDate) < 0 && end.compareTo(eventDate) > 0 */) {
                             //if (themes.contains("ECON_") ) {
                             return true;
                         } else {
@@ -193,9 +194,8 @@ public class StreamingCEPMonitoringJob {
                                 || themes.contains("SELF_IDENTIFIED_ENVIRON_DISASTER")|| themes.contains("SELF_IDENTIFIED_HUMAN_RIGHTS")|| themes.contains("SOC_SUSPICIOUSACTIVITIES")
                                 || themes.contains("STATE_OF_EMERGENCY")|| themes.contains("STRIKE")|| themes.contains("TRANSPARENCY")
                                 || themes.contains("TRIAL")|| themes.contains("UNREST_CLOSINGBORDER")|| themes.contains("UNSAFE_WORK_ENVIRONMENT")
-                                || themes.contains("VETO")|| themes.contains("WHISTLEBLOWER")) && event.getV15Tone() <= 0 && start.compareTo(eventDate) < 0
-                                && end.compareTo(eventDate) > 0) {
-                            //if (themes.contains("ECON_") ) {
+                                || themes.contains("VETO")|| themes.contains("WHISTLEBLOWER"))
+                                && event.getV15Tone() <= 0 /* && start.compareTo(eventDate) < 0 && end.compareTo(eventDate) > 0 */) {
                             return true;
                         } else {
                             return false;
@@ -241,9 +241,7 @@ public class StreamingCEPMonitoringJob {
                                 || themes.contains("RESIGNATION") || themes.contains("SANCTIONS")|| themes.contains("SCANDAL")
                                 || themes.contains("STRIKE")|| themes.contains("TRANSPARENCY")|| themes.contains("TRIAL")
                                 || themes.contains("UNSAFE_WORK_ENVIRONMENT")|| themes.contains("VETO")|| themes.contains("WHISTLEBLOWER")
-                        ) && event.getV15Tone() <= 0 && start.compareTo(eventDate) < 0
-                                && end.compareTo(eventDate) > 0) {
-                            //if (themes.contains("ECON_") ) {
+                        ) && event.getV15Tone() <= 0 /* && start.compareTo(eventDate) < 0 && end.compareTo(eventDate) > 0 */) {
                             return true;
                         } else {
                             return false;
@@ -411,9 +409,6 @@ public class StreamingCEPMonitoringJob {
         }
     }
 
-
-
-
     static class GkgDataAssigner implements AssignerWithPunctuatedWatermarks<GDELTGkgData> {
         @Override
         public long extractTimestamp(GDELTGkgData event, long previousElementTimestamp) {
@@ -423,10 +418,9 @@ public class StreamingCEPMonitoringJob {
         @Override
         public Watermark checkAndGetNextWatermark(GDELTGkgData event, long extractedTimestamp) {
             // simply emit a watermark with every event
-            return new Watermark(extractedTimestamp - 20000   );
+            return new Watermark(extractedTimestamp - 20000);
             //return new Watermark(extractedTimestamp);
         }
     }
-
 }
 
