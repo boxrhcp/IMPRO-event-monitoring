@@ -1,19 +1,19 @@
 name: Java CI
 on: 
-  push:
-    branches: 
-      - master
+ push:
+   branches: 
+     - master
 
-jobs:
-  build:
-    runs-on: self-hosted
+#jobs:
+ # build:
+  #  runs-on: self-hosted
 
-    steps:
-    - uses: actions/checkout@v1
+   # steps:
+    #- uses: actions/checkout@v1
     #- name: Update the download script
      # run: cp scripts/download-files.sh /home/ubuntu/executables/download-files.sh
-    - name: Build with Maven
-      run: mvn clean package
+    #- name: Build with Maven
+     # run: mvn clean package
     #- name: Execute Flink
      # run: |
       #  cp target/impro-event-monitoring-0.1.jar /home/ubuntu/executables/impro-event-monitoring-0.1.jar
