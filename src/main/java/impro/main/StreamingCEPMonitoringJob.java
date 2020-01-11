@@ -116,7 +116,7 @@ public class StreamingCEPMonitoringJob {
         DataStream<GDELTGkgData> GkgOrganizationsData =
                 gdeltGkgData.filter(new FilterOrganisations(chainSection.getChainOrganizationsFilter()));
 
-        // Filter with CEP
+        // Filter themes with CEP
         Pattern<GDELTGkgData, ?> pattern = Pattern.<GDELTGkgData>begin("first")
                 .where(new IterativeCondition<GDELTGkgData>() {
 
