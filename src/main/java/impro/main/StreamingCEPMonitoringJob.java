@@ -31,6 +31,19 @@ import java.util.logging.Logger;
 public class StreamingCEPMonitoringJob {
     private static Logger log = Logger.getGlobal();
 
+    /* TODO If within 3 days there are more than 5 pieces of news about qualcomm, raise a warning in a new index.
+     * Use CEP aggregation to do this. Explain it in the report. As Future work, we should justify why 3 days and
+     * why 5 pieces of news.
+     * */
+
+    /* TODO Show a graph relating companies involved in a series of news and the bigger the involvement, the bigger
+    * the circle in the graph or something like that. Measure involvement by number of appearances in the events.
+    * */
+
+    /* TODO include organizations as en entity of data modelling. Events are another entity. Review the fields to see
+    * if something else can be extracted.
+    * */
+
     private static String rawChainSectionLabel = "RAW SECTION";
     private static String[] rawChainThemesFilter = {
             "ARMEDCONFLICT","BAN","BLACK_MARKET","BLOCKADE","CEASEFIRE","CLOSURE","CORRUPTION","DELAY",
@@ -87,22 +100,22 @@ public class StreamingCEPMonitoringJob {
                 .map(new ParseGdeltGkgDataToBin())
                 .assignTimestampsAndWatermarks(new GkgDataAssigner());
 
-        ChainSection rawChain = new ChainSection(
-                rawChainSectionLabel,
-                null,
-                rawChainThemesFilter);
+        // TODO Try to filter by country here. Otherwise we will get a lof of useless noise
+        ChainSection rawChain = new ChainSection();
+        rawChain.setChainSectionLabel(rawChainSectionLabel);
+        rawChain.setChainThemesFilter(rawChainThemesFilter);
         processChainSection(gdeltGkgData, rawChain);
 
-        ChainSection intermediateChain = new ChainSection(
-                intermediateChainSectionLabel,
-                intermediateChainOrganizationsFilter,
-                intermediateChainThemesFilter);
+        ChainSection intermediateChain = new ChainSection();
+        intermediateChain.setChainSectionLabel(intermediateChainSectionLabel);
+        intermediateChain.setChainOrganizationsFilter(intermediateChainOrganizationsFilter);
+        intermediateChain.setChainThemesFilter(intermediateChainThemesFilter);
         processChainSection(gdeltGkgData, intermediateChain);
 
-        ChainSection endChain = new ChainSection(
-                endChainSectionLabel,
-                endChainOrganizationsFilter,
-                endChainThemesFilter);
+        ChainSection endChain = new ChainSection();
+        endChain.setChainSectionLabel(endChainSectionLabel);
+        endChain.setChainOrganizationsFilter(endChainOrganizationsFilter);
+        endChain.setChainThemesFilter(endChainThemesFilter);
         processChainSection(gdeltGkgData, endChain);
 
         env.execute("CPU Events processing and ES storing");
@@ -117,8 +130,8 @@ public class StreamingCEPMonitoringJob {
 
         // Filter themes with CEP
         /* We have to extract the themes into an array first. Otherwise, Flink will throw an exception complaining that
-         * the object chainSection is not serializable.
-         * */
+        * the object chainSection is not serializable.
+        * */
         String[] themesFilter = chainSection.getChainThemesFilter();
         Pattern<GDELTGkgData, ?> pattern = Pattern.<GDELTGkgData>begin("first")
             .where(new IterativeCondition<GDELTGkgData>() {
@@ -141,8 +154,8 @@ public class StreamingCEPMonitoringJob {
                 relevantEvents.select(new RelevantFields(chainSection.getChainSectionLabel()));
 
         // Store the final results in Elasticsearch
-        ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
-        if (esStoreSink.isOnline()) {
+        ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getChainSectionLabel());
+        if (ElasticsearchStoreSink.isOnline()) {
             finalResults.addSink(esStoreSink.getEsSink());
         }
     }

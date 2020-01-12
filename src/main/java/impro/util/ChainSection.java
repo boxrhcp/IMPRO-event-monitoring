@@ -5,21 +5,29 @@ public class ChainSection {
     private String[] chainOrganizationsFilter;
     private String[] chainThemesFilter;
 
-    public ChainSection(String chainSectionLabel, String[] chainOrganizationsFilter, String[] chainThemesFilter) {
-        this.chainSectionLabel = chainSectionLabel;
-        this.chainOrganizationsFilter = chainOrganizationsFilter;
-        this.chainThemesFilter = chainThemesFilter;
-    }
+    public ChainSection() {}
 
     public String getChainSectionLabel() {
         return chainSectionLabel;
+    }
+
+    public void setChainSectionLabel(String chainSectionLabel) {
+        this.chainSectionLabel = chainSectionLabel;
     }
 
     public String[] getChainOrganizationsFilter() {
         return chainOrganizationsFilter;
     }
 
+    public void setChainOrganizationsFilter(String[] chainOrganizationsFilter) {
+        this.chainOrganizationsFilter = chainOrganizationsFilter;
+    }
+
     public String[] getChainThemesFilter() {
         return chainThemesFilter;
+    }
+
+    public void setChainThemesFilter(String[] chainThemesFilter) {
+        this.chainThemesFilter = chainThemesFilter;
     }
 }

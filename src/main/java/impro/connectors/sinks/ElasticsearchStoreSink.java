@@ -28,14 +28,14 @@ public class ElasticsearchStoreSink {
 
     private ElasticsearchSink<Tuple5<String, String, String, String, String>> esSink;
 
-    public ElasticsearchStoreSink() {
+    public ElasticsearchStoreSink(String indexSubname) {
         List<HttpHost> httpHosts = new ArrayList<>();
         httpHosts.add(new HttpHost(ES_HOST, ES_PORT, ES_PROTOCOL));
 
         ElasticsearchSink.Builder<Tuple5<String, String, String, String, String>> esSinkBuilder = new ElasticsearchSink.Builder<>(
         httpHosts,
         (Tuple5<String, String, String, String, String> element, RuntimeContext ctx, RequestIndexer indexer) -> {
-            indexer.add(createIndexRequest(element));
+            indexer.add(createIndexRequest(indexSubname, element));
         });
 
         // configuration for the bulk requests; this instructs the sink to emit after every element, otherwise they would be buffered
@@ -44,7 +44,7 @@ public class ElasticsearchStoreSink {
         this.esSink = esSinkBuilder.build();
     }
 
-    private static IndexRequest createIndexRequest(Tuple5<String, String, String, String, String> event) {
+    private static IndexRequest createIndexRequest(String indexSubname, Tuple5<String, String, String, String, String> event) {
         Map<String, String> json = new HashMap<>();
         json.put("date", event.f0);
         json.put("recordId", event.f1);
@@ -53,8 +53,8 @@ public class ElasticsearchStoreSink {
         json.put("section", event.f4);
 
         return Requests.indexRequest()
-                .index("supply-chain-events")
-                .type("disruption-events")
+                .index("supply-chain-events-" + indexSubname)
+                .type("events")
                 .id(event.f1)
                 .source(json);
     }
@@ -63,7 +63,7 @@ public class ElasticsearchStoreSink {
         return esSink;
     }
 
-    public boolean isOnline () {
+    public static boolean isOnline () {
         RestHighLevelClient client = new RestHighLevelClient(
                 RestClient.builder(new HttpHost(ES_HOST, ES_PORT, ES_PROTOCOL)));
 
