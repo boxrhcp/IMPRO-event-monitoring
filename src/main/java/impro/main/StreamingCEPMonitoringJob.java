@@ -2,9 +2,11 @@ package impro.main;
 
 import impro.connectors.sinks.ElasticsearchStoreSink;
 import impro.data.GDELTGkgData;
+import impro.data.KeyedDataPoint;
 import impro.util.ChainSection;
 import impro.util.ParseGdeltGkgDataToBin;
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.cep.CEP;
@@ -14,9 +16,14 @@ import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.IterativeCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
+import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.util.Collector;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -108,7 +115,7 @@ public class StreamingCEPMonitoringJob {
                 .map(new ParseGdeltGkgDataToBin())
                 .assignTimestampsAndWatermarks(new GkgDataAssigner());
 
-        // TODO Try to filter by country here. Otherwise we will get a lof of useless noise
+            // TODO Try to filter by country here. Otherwise we will get a lof of useless noise
         ChainSection rawChain = new ChainSection();
         rawChain.setSectionLabel(rawChainSectionLabel);
         rawChain.setThemeFilter(rawChainThemesFilter);
@@ -168,11 +175,16 @@ public class StreamingCEPMonitoringJob {
         DataStream<Tuple6<Date, String, String, String, String, String>> finalResults =
                 relevantEvents.select(new RelevantFields(chainSection.getSectionLabel()));
 
+        WindowedStream<Tuple6<Date, String, String, String, String, String>, Tuple, TimeWindow> windowed=
+                finalResults.keyBy(0).timeWindow(Time.days(5));
+
         // Store the final results in Elasticsearch
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
         if (ElasticsearchStoreSink.isOnline()) {
             finalResults.addSink(esStoreSink.getEventsSink());
         }
+
+
     }
 
     private static class RelevantFields implements PatternSelectFunction<GDELTGkgData, Tuple6<Date, String, String, String, String, String>> {
@@ -237,5 +249,21 @@ public class StreamingCEPMonitoringJob {
             return new Watermark(extractedTimestamp - 20000);
 //            return new Watermark(event.getV21Date().getTime());
         }
+    }
+
+    public class CountFunction implements WindowFunction<KeyedDataPoint<GDELTGkgData>, Integer, Tuple, TimeWindow> {
+
+
+        @Override
+        public void apply(Tuple arg0, TimeWindow window, Iterable<KeyedDataPoint<GDELTGkgData>> input, Collector<Integer> out) {
+            int count = 0;
+
+            for (KeyedDataPoint<GDELTGkgData> in: input) {
+                count++;
+            }
+            out.collect(count);
+
+        }
+
     }
 }
