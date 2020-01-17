@@ -251,18 +251,22 @@ public class StreamingCEPMonitoringJob {
         }
     }
 
-    public class CountFunction implements WindowFunction<KeyedDataPoint<GDELTGkgData>, Integer, Tuple, TimeWindow> {
+    public class CountFunction implements WindowFunction<KeyedDataPoint<GDELTGkgData>, Tuple3<Date, Date, Integer>, Tuple, TimeWindow> {
 
 
         @Override
-        public void apply(Tuple arg0, TimeWindow window, Iterable<KeyedDataPoint<GDELTGkgData>> input, Collector<Integer> out) {
+        public void apply(Tuple arg0, TimeWindow window, Iterable<KeyedDataPoint<GDELTGkgData>> input, Collector<Tuple3<Date,Date,Integer>> out) {
             int count = 0;
 
             for (KeyedDataPoint<GDELTGkgData> in: input) {
                 count++;
             }
-            out.collect(count);
 
+            Tuple3<Date, Date, Integer> resultCount = new Tuple3<Date,Date,Integer>(new Date(window.getStart()),
+                    new Date(window.getEnd()),
+                    count);
+
+            out.collect(resultCount);
         }
 
     }
