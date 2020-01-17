@@ -1,8 +1,8 @@
 package impro.main;
 
 import impro.connectors.sinks.ElasticsearchStoreSink;
+import impro.connectors.sinks.ElasticSearchAlarmSink;
 import impro.data.GDELTGkgData;
-import impro.data.KeyedDataPoint;
 import impro.util.ChainSection;
 import impro.util.ParseGdeltGkgDataToBin;
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -181,11 +181,13 @@ public class StreamingCEPMonitoringJob {
                 finalResults.keyBy(0).timeWindow(Time.days(5));
 
         DataStream<Tuple3<Date,Date,Integer>> countFinal = windowedFinal.apply(new CountFunction());
-        
+
         // Store the final results in Elasticsearch
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
+        ElasticSearchAlarmSink esAlarmLink = new ElasticSearchAlarmSink(chainSection.getSectionLabel());
         if (ElasticsearchStoreSink.isOnline()) {
             finalResults.addSink(esStoreSink.getEventsSink());
+            countFinal.addSink(esAlarmLink.getEventsSink());
         }
 
 
@@ -266,11 +268,15 @@ public class StreamingCEPMonitoringJob {
                 count++;
             }
 
-            Tuple3<Date, Date, Integer> resultCount = new Tuple3<Date,Date,Integer>(new Date(window.getStart()),
-                    new Date(window.getEnd()),
-                    count);
+            if(count >= 5)
+            {
+                Tuple3<Date, Date, Integer> resultCount = new Tuple3<Date,Date,Integer>(new Date(window.getStart()),
+                        new Date(window.getEnd()),
+                        count);
 
-            out.collect(resultCount);
+                out.collect(resultCount);
+            }
+
         }
 
     }
