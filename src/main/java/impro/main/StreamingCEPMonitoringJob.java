@@ -7,6 +7,7 @@ import impro.util.ChainSection;
 import impro.util.ParseGdeltGkgDataToBin;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.cep.CEP;
@@ -134,6 +135,7 @@ public class StreamingCEPMonitoringJob {
         endChain.setThemeFilter(endChainThemesFilter);
         processChainSection(gdeltGkgData, endChain);
 
+        // check for alarms
         env.execute("CPU Events processing and ES storing");
     }
 
@@ -175,9 +177,11 @@ public class StreamingCEPMonitoringJob {
         DataStream<Tuple6<Date, String, String, String, String, String>> finalResults =
                 relevantEvents.select(new RelevantFields(chainSection.getSectionLabel()));
 
-        WindowedStream<Tuple6<Date, String, String, String, String, String>, Tuple, TimeWindow> windowed=
+        WindowedStream<Tuple6<Date, String, String, String, String, String>, Tuple, TimeWindow> windowedFinal=
                 finalResults.keyBy(0).timeWindow(Time.days(5));
 
+        DataStream<Tuple3<Date,Date,Integer>> countFinal = windowedFinal.apply(new CountFunction());
+        
         // Store the final results in Elasticsearch
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
         if (ElasticsearchStoreSink.isOnline()) {
@@ -251,14 +255,14 @@ public class StreamingCEPMonitoringJob {
         }
     }
 
-    public class CountFunction implements WindowFunction<KeyedDataPoint<GDELTGkgData>, Tuple3<Date, Date, Integer>, Tuple, TimeWindow> {
+    public static class CountFunction implements WindowFunction<Tuple6<Date, String, String, String, String, String>, Tuple3<Date, Date, Integer>, Tuple, TimeWindow> {
 
 
         @Override
-        public void apply(Tuple arg0, TimeWindow window, Iterable<KeyedDataPoint<GDELTGkgData>> input, Collector<Tuple3<Date,Date,Integer>> out) {
+        public void apply(Tuple arg0, TimeWindow window, Iterable<Tuple6<Date, String, String, String, String, String>> input, Collector<Tuple3<Date,Date,Integer>> out) {
             int count = 0;
 
-            for (KeyedDataPoint<GDELTGkgData> in: input) {
+            for (Tuple6<Date, String, String, String, String, String> in: input) {
                 count++;
             }
 
