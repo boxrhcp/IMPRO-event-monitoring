@@ -36,10 +36,6 @@ public class StreamingCEPMonitoringJob {
 
     private static final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-    /* TODO Parse the themes in each event. Store them inside a map and send them to a new ES index to visualize them.
-    * Same with the countries. Don't forget to include the date field so it can be filtered by time.
-    * */
-
     /* TODO If within 3 days there are more than 5 pieces of news about qualcomm, raise a warning in a new index.
      * Use CEP aggregation to do this. Explain it in the report. As Future work, we should justify why 3 days and
      * why 5 pieces of news.
@@ -47,11 +43,6 @@ public class StreamingCEPMonitoringJob {
 
     /* TODO Show a graph relating companies involved in a series of news and the bigger the involvement, the bigger
     * the circle in the graph or something like that. Measure involvement by number of appearances in the events.
-    * */
-
-    /* TODO include organizations as en entity of data modelling. Events are another entity. Review the fields to see
-    * if something else can be extracted.
-    * Supply Chain has Chain Sections. Events impact Chain Sections. Organizations have supply chains.
     * */
 
     private static String rawChainSectionLabel = "raw-section";
