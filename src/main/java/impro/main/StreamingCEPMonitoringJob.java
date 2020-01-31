@@ -75,6 +75,9 @@ public class StreamingCEPMonitoringJob {
     private static String[] intermediateChainOrganizationsFilter = {
             "samsung","tsmc","taiwan semiconductor manufacturing company","qualcomm"
     };
+    private static String[] intermediateChainLocationFilter = {
+            "korea", "taiwan", "china"
+    };
     private static String[] intermediateChainThemesFilter = {
             "BAN","BLOCKADE","CLOSURE","CORRUPTION","DELAY","ECON_BANKRUPTCY","ECON_BOYCOTT","ECON_DEBT",
             "ECON_EARNINGSREPORT","ECON_ENTREPRENEURSHIP","ECON_FREETRADE","ECON_MONOPOLY","ECON_NATIONALIZE",
@@ -116,6 +119,7 @@ public class StreamingCEPMonitoringJob {
         intermediateChain.setSectionLabel(intermediateChainSectionLabel);
         intermediateChain.setOrganizationFilter(intermediateChainOrganizationsFilter);
         intermediateChain.setThemeFilter(intermediateChainThemesFilter);
+        intermediateChain.setLocationFilter(intermediateChainLocationFilter);
         processChainSection(gdeltGkgData, intermediateChain);
 
         ChainSection endChain = new ChainSection();
