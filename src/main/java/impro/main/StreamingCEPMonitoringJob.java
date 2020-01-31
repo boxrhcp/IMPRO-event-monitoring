@@ -16,14 +16,18 @@ import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.IterativeCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
+import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
+import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.util.Collector;
 
 import java.util.Arrays;
@@ -177,8 +181,8 @@ public class StreamingCEPMonitoringJob {
         DataStream<Tuple6<Date, String, String, String, String, String>> finalResults =
                 relevantEvents.select(new RelevantFields(chainSection.getSectionLabel()));
 
-        WindowedStream<Tuple6<Date, String, String, String, String, String>, Tuple, TimeWindow> windowedFinal=
-                finalResults.keyBy(0).timeWindow(Time.days(5));
+        AllWindowedStream windowedFinal=
+                finalResults.windowAll(TumblingEventTimeWindows.of(Time.days(5)));
 
         DataStream<Tuple3<Date,Date,Integer>> countFinal = windowedFinal.apply(new CountFunction());
 
@@ -186,7 +190,7 @@ public class StreamingCEPMonitoringJob {
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
         ElasticSearchAlarmSink esAlarmLink = new ElasticSearchAlarmSink(chainSection.getSectionLabel());
         if (ElasticsearchStoreSink.isOnline()) {
-            finalResults.addSink(esStoreSink.getEventsSink());
+            //finalResults.addSink(esStoreSink.getEventsSink());
             countFinal.addSink(esAlarmLink.getEventsSink());
         }
 
@@ -257,13 +261,17 @@ public class StreamingCEPMonitoringJob {
         }
     }
 
-    public static class CountFunction implements WindowFunction<Tuple6<Date, String, String, String, String, String>, Tuple3<Date, Date, Integer>, Tuple, TimeWindow> {
+    public static class CountFunction implements AllWindowFunction<Tuple6<Date, String, String, String, String, String>,
+            Tuple3<Date,Date,Integer>, TimeWindow> {
 
 
         @Override
-        public void apply(Tuple arg0, TimeWindow window, Iterable<Tuple6<Date, String, String, String, String, String>> input, Collector<Tuple3<Date,Date,Integer>> out) {
+        public void apply(TimeWindow window, Iterable<Tuple6<Date, String, String, String, String, String>> input, Collector<Tuple3<Date,Date,Integer>> out) {
             int count = 0;
-
+            System.out.println("=====");
+            System.out.println(window.getStart());
+            System.out.println(window.getEnd());
+            System.out.println("=====");
             for (Tuple6<Date, String, String, String, String, String> in: input) {
                 count++;
             }
