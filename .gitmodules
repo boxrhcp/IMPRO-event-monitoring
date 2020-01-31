@@ -1,0 +1,3 @@
+[submodule "scripts/impro-gdelt-downloader"]
+	path = scripts/impro-gdelt-downloader
+	url = https://gitlab.com/dfunke/impro-gdelt-downloader.git
