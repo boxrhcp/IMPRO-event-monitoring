@@ -1,18 +1,12 @@
 package impro.main;
 
 import impro.connectors.sinks.ElasticsearchStoreSink;
-import impro.connectors.sinks.ElasticSearchAlarmSink;
 import impro.data.GDELTGkgData;
 import impro.util.*;
 import org.apache.flink.api.common.functions.FilterFunction;
-<<<<<<< HEAD
-import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple6;
-=======
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple7;
->>>>>>> master
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternSelectFunction;
@@ -22,28 +16,17 @@ import org.apache.flink.cep.pattern.conditions.IterativeCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
-<<<<<<< HEAD
-import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
-import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.util.Collector;
-=======
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.api.watermark.Watermark;
-import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
->>>>>>> master
 
 import java.util.*;
 import java.util.logging.Logger;
