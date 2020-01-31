@@ -302,15 +302,15 @@ public class StreamingCEPMonitoringJob {
         }
     }
 
-    public static class CountFunction implements AllWindowFunction<Tuple6<Date, String, String, String, String, String>,
+    public static class CountFunction implements AllWindowFunction<Tuple7<Date, String, String, Double, Location[], String[], String[]>,
             Tuple3<Date,Date,Integer>, TimeWindow> {
 
 
         @Override
-        public void apply(TimeWindow window, Iterable<Tuple6<Date, String, String, String, String, String>> input, Collector<Tuple3<Date,Date,Integer>> out) {
+        public void apply(TimeWindow window, Iterable<Tuple7<Date, String, String, Double, Location[], String[], String[]>> input, Collector<Tuple3<Date,Date,Integer>> out) {
             int count = 0;
 
-            for (Tuple6<Date, String, String, String, String, String> in: input) {
+            for (Tuple7<Date, String, String, Double, Location[], String[], String[]> in: input) {
                 count++;
             }
 

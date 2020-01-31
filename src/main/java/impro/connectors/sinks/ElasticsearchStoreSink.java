@@ -42,6 +42,7 @@ public class ElasticsearchStoreSink {
         this.locationsSink = buildLocationSink(httpHosts, indexSubname);
         this.organizationSink = buildOrganizationSink(httpHosts, indexSubname);
         this.themesSink = buildThemeSink(httpHosts, indexSubname);
+        this.alarmSink = buildAlarmSink(httpHosts, indexSubname);
     }
 
     public ElasticsearchSink<Tuple7<Date, String, String, Double, Location[], String[], String[]>> getEventsSink() {
