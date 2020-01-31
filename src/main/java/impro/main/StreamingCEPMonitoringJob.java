@@ -190,7 +190,7 @@ public class StreamingCEPMonitoringJob {
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
         ElasticSearchAlarmSink esAlarmLink = new ElasticSearchAlarmSink(chainSection.getSectionLabel());
         if (ElasticsearchStoreSink.isOnline()) {
-            //finalResults.addSink(esStoreSink.getEventsSink());
+            finalResults.addSink(esStoreSink.getEventsSink());
             countFinal.addSink(esAlarmLink.getEventsSink());
         }
 
@@ -268,10 +268,7 @@ public class StreamingCEPMonitoringJob {
         @Override
         public void apply(TimeWindow window, Iterable<Tuple6<Date, String, String, String, String, String>> input, Collector<Tuple3<Date,Date,Integer>> out) {
             int count = 0;
-            System.out.println("=====");
-            System.out.println(window.getStart());
-            System.out.println(window.getEnd());
-            System.out.println("=====");
+
             for (Tuple6<Date, String, String, String, String, String> in: input) {
                 count++;
             }

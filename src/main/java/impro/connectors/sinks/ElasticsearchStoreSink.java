@@ -22,8 +22,7 @@ public class ElasticsearchStoreSink {
     public static Logger log = Logger.getGlobal();
 
     private final static String ES_HOST = "localhost";
-//    private final static int ES_PORT = 9200;
-    private final static int ES_PORT = 9201;
+    private final static int ES_PORT = 9200;
     private final static String ES_PROTOCOL = "http";
 
     private ElasticsearchSink<Tuple6<Date, String, String, String, String, String>> eventsSink;
