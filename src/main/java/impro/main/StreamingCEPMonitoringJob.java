@@ -2,10 +2,10 @@ package impro.main;
 
 import impro.connectors.sinks.ElasticsearchStoreSink;
 import impro.data.GDELTGkgData;
-import impro.util.ChainSection;
-import impro.util.ParseGdeltGkgDataToBin;
+import impro.util.*;
 import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.java.tuple.Tuple5;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternSelectFunction;
@@ -14,13 +14,15 @@ import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.IterativeCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 
@@ -31,7 +33,30 @@ import java.util.logging.Logger;
 public class StreamingCEPMonitoringJob {
     private static Logger log = Logger.getGlobal();
 
-    private static String rawChainSectionLabel = "RAW SECTION";
+    private static final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+    /* TODO Parse the themes in each event. Store them inside a map and send them to a new ES index to visualize them.
+    * Same with the countries. Don't forget to include the date field so it can be filtered by time.
+    * */
+
+    /* TODO If within 3 days there are more than 5 pieces of news about qualcomm, raise a warning in a new index.
+     * Use CEP aggregation to do this. Explain it in the report. As Future work, we should justify why 3 days and
+     * why 5 pieces of news.
+     * */
+
+    /* TODO Show a graph relating companies involved in a series of news and the bigger the involvement, the bigger
+    * the circle in the graph or something like that. Measure involvement by number of appearances in the events.
+    * */
+
+    /* TODO include organizations as en entity of data modelling. Events are another entity. Review the fields to see
+    * if something else can be extracted.
+    * Supply Chain has Chain Sections. Events impact Chain Sections. Organizations have supply chains.
+    * */
+
+    private static String rawChainSectionLabel = "raw-section";
+    private static String[] rawChainLocationFilter = {
+            "russia", "canada", "china", "united states", "norway", "france", "brazil", "india"
+    };
     private static String[] rawChainThemesFilter = {
             "ARMEDCONFLICT","BAN","BLACK_MARKET","BLOCKADE","CEASEFIRE","CLOSURE","CORRUPTION","DELAY",
             "ECON_BANKRUPTCY","ECON_BOYCOTT","ECON_FREETRADE","ECON_NATIONALIZE","ECON_PRICECONTROL","ECON_SUBSIDIES",
@@ -45,7 +70,7 @@ public class StreamingCEPMonitoringJob {
             "STRIKE","UNREST_CLOSINGBORDER","UNSAFE_WORK_ENVIRONMENT","VETO"
     };
 
-    private static String intermediateChainSectionLabel = "INTERMEDIATE SECTION";
+    private static String intermediateChainSectionLabel = "intermediate-section";
     private static String[] intermediateChainOrganizationsFilter = {
             "samsung","tsmc","taiwan semiconductor manufacturing company","qualcomm"
     };
@@ -62,16 +87,9 @@ public class StreamingCEPMonitoringJob {
             "TRIAL","UNREST_CLOSINGBORDER","UNSAFE_WORK_ENVIRONMENT","VETO","WHISTLEBLOWER"
     };
 
-    private static String endChainSectionLabel = "END SECTION";
+    private static String endChainSectionLabel = "end-section";
     private static String[] endChainOrganizationsFilter = { "qualcomm" };
     private static String[] endChainThemesFilter = {
-            "BAN","CORRUPTION","CYBER_ATTACK","DELAY","ECON_BANKRUPTCY","ECON_BOYCOTT","ECON_DEBT",
-            "ECON_EARNINGSREPORT","ECON_ENTREPRENEURSHIP","ECON_FREETRADE","ECON_MONOPOLY",
-            "ECON_PRICECONTROL","ECON_STOCKMARKET","ECON_SUBSIDIES","ECON_TAXATION","ECON_TRADE_DISPUTE",
-            "ECON_UNIONS","GRIEVANCES","INFO_HOAX","INFO_RUMOR","INTERNET_BLACKOUT","LEGALIZE",
-            "LEGISLATION","NEGOTIATIONS","NEW_CONSTRUCTION","POLITICAL_TURMOIL","POWER_OUTAGE",
-            "PROPERTY_RIGHTS","RESIGNATION","SANCTIONS","SCANDAL","STRIKE","TRANSPARENCY","TRIAL",
-            "UNSAFE_WORK_ENVIRONMENT","VETO","WHISTLEBLOWER"
     };
 
     public static void main(String[] args) throws Exception {
@@ -79,7 +97,7 @@ public class StreamingCEPMonitoringJob {
         String inputPath = params.get("input");
         inputPath = inputPath == null || inputPath.equals("") ? "/home/impro/impro-gdelt-downloader/csv" : inputPath;
 
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+//        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         // GKG Table
@@ -87,22 +105,22 @@ public class StreamingCEPMonitoringJob {
                 .map(new ParseGdeltGkgDataToBin())
                 .assignTimestampsAndWatermarks(new GkgDataAssigner());
 
-        ChainSection rawChain = new ChainSection(
-                rawChainSectionLabel,
-                null,
-                rawChainThemesFilter);
+        ChainSection rawChain = new ChainSection();
+        rawChain.setSectionLabel(rawChainSectionLabel);
+        rawChain.setThemeFilter(rawChainThemesFilter);
+        rawChain.setLocationFilter(rawChainLocationFilter);
         processChainSection(gdeltGkgData, rawChain);
 
-        ChainSection intermediateChain = new ChainSection(
-                intermediateChainSectionLabel,
-                intermediateChainOrganizationsFilter,
-                intermediateChainThemesFilter);
+        ChainSection intermediateChain = new ChainSection();
+        intermediateChain.setSectionLabel(intermediateChainSectionLabel);
+        intermediateChain.setOrganizationFilter(intermediateChainOrganizationsFilter);
+        intermediateChain.setThemeFilter(intermediateChainThemesFilter);
         processChainSection(gdeltGkgData, intermediateChain);
 
-        ChainSection endChain = new ChainSection(
-                endChainSectionLabel,
-                endChainOrganizationsFilter,
-                endChainThemesFilter);
+        ChainSection endChain = new ChainSection();
+        endChain.setSectionLabel(endChainSectionLabel);
+        endChain.setOrganizationFilter(endChainOrganizationsFilter);
+        endChain.setThemeFilter(endChainThemesFilter);
         processChainSection(gdeltGkgData, endChain);
 
         env.execute("CPU Events processing and ES storing");
@@ -110,16 +128,22 @@ public class StreamingCEPMonitoringJob {
 
     private static void processChainSection(DataStream<GDELTGkgData> gdeltGkgData, ChainSection chainSection) {
         DataStream<GDELTGkgData> processedData = gdeltGkgData;
+
         // Filter organizations
-        if (chainSection.getChainOrganizationsFilter() != null) {
-            processedData = gdeltGkgData.filter(new FilterOrganisations(chainSection.getChainOrganizationsFilter()));
+        if (chainSection.getOrganizationFilter() != null) {
+            processedData = gdeltGkgData.filter(new FilterOrganisations(chainSection.getOrganizationFilter()));
+        }
+
+        // Filter locations
+        if (chainSection.getLocationFilter() != null) {
+            processedData = gdeltGkgData.filter(new FilterLocation(chainSection.getLocationFilter()));
         }
 
         // Filter themes with CEP
         /* We have to extract the themes into an array first. Otherwise, Flink will throw an exception complaining that
-         * the object chainSection is not serializable.
-         * */
-        String[] themesFilter = chainSection.getChainThemesFilter();
+        * the object chainSection is not serializable.
+        * */
+        String[] themesFilter = chainSection.getThemeFilter();
         Pattern<GDELTGkgData, ?> pattern = Pattern.<GDELTGkgData>begin("first")
             .where(new IterativeCondition<GDELTGkgData>() {
 
@@ -137,17 +161,28 @@ public class StreamingCEPMonitoringJob {
 
         // Apply the defined CEP pattern to the data
         PatternStream<GDELTGkgData> relevantEvents = CEP.pattern(processedData, pattern);
-        DataStream<Tuple5<String, String, String, String, String>> finalResults =
-                relevantEvents.select(new RelevantFields(chainSection.getChainSectionLabel()));
 
-        // Store the final results in Elasticsearch
-        ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink();
-        if (esStoreSink.isOnline()) {
-            finalResults.addSink(esStoreSink.getEsSink());
+
+        RelevantFields relevantFields = new RelevantFields(chainSection.getSectionLabel());
+        DataStream<Tuple7<Date, String, String, Double, Location[], String[], String[]>> finalResults =
+                relevantEvents.select(relevantFields);
+
+        final OutputTag<Tuple3<Date, String, String>> locationsOutputTag = new OutputTag<Tuple3<Date, String, String>>("location-output"){};
+        final OutputTag<Tuple3<Date, String, String>> organizationsOutputTag = new OutputTag<Tuple3<Date, String, String>>("organizations-output"){};
+        final OutputTag<Tuple3<Date, String, String>> themesOutputTag = new OutputTag<Tuple3<Date, String, String>>("themes-output"){};
+
+        SingleOutputStreamOperator<Void> voidStream = finalResults.process(sideOutput(locationsOutputTag, organizationsOutputTag, themesOutputTag));
+
+        ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
+        if (ElasticsearchStoreSink.isOnline()) {
+            finalResults.addSink(esStoreSink.getEventsSink());
+            voidStream.getSideOutput(locationsOutputTag).addSink(esStoreSink.getLocationsSink());
+            voidStream.getSideOutput(organizationsOutputTag).addSink(esStoreSink.getOrganizationsSink());
+            voidStream.getSideOutput(themesOutputTag).addSink(esStoreSink.getThemesSink());
         }
     }
 
-    private static class RelevantFields implements PatternSelectFunction<GDELTGkgData, Tuple5<String, String, String, String, String>> {
+    private static class RelevantFields implements PatternSelectFunction<GDELTGkgData, Tuple7<Date, String, String, Double, Location[], String[], String[]>> {
         private String section;
 
         public RelevantFields(String section) {
@@ -155,15 +190,17 @@ public class StreamingCEPMonitoringJob {
         }
 
         @Override
-        public Tuple5<String, String, String, String, String> select(Map<String, List<GDELTGkgData>> pattern) {
+        public Tuple7<Date, String, String, Double, Location[], String[], String[]> select(Map<String, List<GDELTGkgData>> pattern) {
             GDELTGkgData first = pattern.get("first").get(0);
 
-            return new Tuple5<>(
-                    first.getV21Date().toString(),
+            return new Tuple7<Date, String, String, Double, Location[], String[], String[]>(
+                    first.getV21Date(),
                     first.getGkgRecordId(),
-                    first.getV1Organizations(),
-                    first.getV1Themes(),
-                    this.section/*, first.getV21AllNames(), first.getV21Amounts()*/);
+                    this.section,
+                    first.getV15Tone(),
+                    Location.formatLocations(first.getV1Locations()),
+                    Organization.formatOrganizations(first.getV1Organizations()),
+                    Theme.formatThemes(first.getV1Themes()));
         }
     }
 
@@ -182,6 +219,60 @@ public class StreamingCEPMonitoringJob {
         }
     }
 
+    public static class FilterLocation implements FilterFunction<GDELTGkgData> {
+        private String[] locations;
+
+        public FilterLocation(String[] locations) {
+            this.locations = locations;
+        }
+
+        @Override
+        public boolean filter(GDELTGkgData event) {
+            String orgList = event.getV1Locations();
+
+            return Arrays.stream(this.locations).parallel().anyMatch(orgList.toLowerCase()::contains);
+        }
+    }
+    
+    private static ProcessFunction<Tuple7<Date, String, String, Double, Location[], String[], String[]>, Void> sideOutput(
+            OutputTag<Tuple3<Date, String, String>> locationsOutputTag,
+            OutputTag<Tuple3<Date, String, String>> organizationsOutputTag,
+            OutputTag<Tuple3<Date, String, String>> themesOutputTag) {
+
+        return new ProcessFunction<Tuple7<Date, String, String, Double, Location[], String[], String[]>, Void>() {
+            @Override
+            public void processElement(Tuple7<Date, String, String, Double, Location[], String[], String[]> event, Context context, Collector<Void> collector) throws Exception {
+                // f4 locations
+                Arrays.asList(event.f4).forEach(location -> {
+                    Tuple3<Date, String, String> locationTuple = new Tuple3<>();
+                    locationTuple.setField(event.f0, 0);
+                    locationTuple.setField(event.f1, 1);
+                    locationTuple.setField(location.getCode(), 2);
+
+                    context.output(locationsOutputTag, locationTuple);
+                });
+
+                // f5 organizations
+                Arrays.asList(event.f5).forEach(organization -> {
+                    Tuple3<Date, String, String> organizationTuple = new Tuple3<>();
+                    organizationTuple.setField(event.f0, 0);
+                    organizationTuple.setField(event.f1, 1);
+                    organizationTuple.setField(organization, 2);
+                    context.output(organizationsOutputTag, organizationTuple);
+                });
+
+                // f6 themes
+                Arrays.asList(event.f6).forEach(theme -> {
+                    Tuple3<Date, String, String> themeTuple = new Tuple3<>();
+                    themeTuple.setField(event.f0, 0);
+                    themeTuple.setField(event.f1, 1);
+                    themeTuple.setField(theme, 2);
+                    context.output(themesOutputTag, themeTuple);
+                });
+            }
+        };
+    }
+
     static class GkgDataAssigner implements AssignerWithPunctuatedWatermarks<GDELTGkgData> {
         @Override
         public long extractTimestamp(GDELTGkgData event, long previousElementTimestamp) {
@@ -190,9 +281,8 @@ public class StreamingCEPMonitoringJob {
 
         @Override
         public Watermark checkAndGetNextWatermark(GDELTGkgData event, long extractedTimestamp) {
-            // simply emit a watermark with every event
             return new Watermark(extractedTimestamp - 20000);
-            //return new Watermark(extractedTimestamp);
+//            return new Watermark(event.getV21Date().getTime());
         }
     }
 }

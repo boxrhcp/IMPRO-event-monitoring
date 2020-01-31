@@ -1,25 +1,42 @@
 package impro.util;
 
 public class ChainSection {
-    private String chainSectionLabel;
-    private String[] chainOrganizationsFilter;
-    private String[] chainThemesFilter;
+    private String sectionLabel;
+    private String[] organizationFilter;
+    private String[] themeFilter;
+    private String[] locationFilter;
 
-    public ChainSection(String chainSectionLabel, String[] chainOrganizationsFilter, String[] chainThemesFilter) {
-        this.chainSectionLabel = chainSectionLabel;
-        this.chainOrganizationsFilter = chainOrganizationsFilter;
-        this.chainThemesFilter = chainThemesFilter;
+    public ChainSection() {}
+
+    public String getSectionLabel() {
+        return sectionLabel;
     }
 
-    public String getChainSectionLabel() {
-        return chainSectionLabel;
+    public void setSectionLabel(String sectionLabel) {
+        this.sectionLabel = sectionLabel;
     }
 
-    public String[] getChainOrganizationsFilter() {
-        return chainOrganizationsFilter;
+    public String[] getOrganizationFilter() {
+        return organizationFilter;
     }
 
-    public String[] getChainThemesFilter() {
-        return chainThemesFilter;
+    public void setOrganizationFilter(String[] organizationFilter) {
+        this.organizationFilter = organizationFilter;
+    }
+
+    public String[] getThemeFilter() {
+        return themeFilter;
+    }
+
+    public void setThemeFilter(String[] themeFilter) {
+        this.themeFilter = themeFilter;
+    }
+
+    public String[] getLocationFilter() {
+        return locationFilter;
+    }
+
+    public void setLocationFilter(String[] locationFilter) {
+        this.locationFilter = locationFilter;
     }
 }
