@@ -95,6 +95,13 @@ public class StreamingCEPMonitoringJob {
     private static String endChainSectionLabel = "end-section";
     private static String[] endChainOrganizationsFilter = { "qualcomm" };
     private static String[] endChainThemesFilter = {
+            "BAN","CORRUPTION","CYBER_ATTACK","DELAY","ECON_BANKRUPTCY","ECON_BOYCOTT","ECON_DEBT",
+            "ECON_EARNINGSREPORT","ECON_ENTREPRENEURSHIP","ECON_FREETRADE","ECON_MONOPOLY",
+            "ECON_PRICECONTROL","ECON_STOCKMARKET","ECON_SUBSIDIES","ECON_TAXATION","ECON_TRADE_DISPUTE",
+            "ECON_UNIONS","GRIEVANCES","INFO_HOAX","INFO_RUMOR","INTERNET_BLACKOUT","LEGALIZE",
+            "LEGISLATION","NEGOTIATIONS","NEW_CONSTRUCTION","POLITICAL_TURMOIL","POWER_OUTAGE",
+            "PROPERTY_RIGHTS","RESIGNATION","SANCTIONS","SCANDAL","STRIKE","TRANSPARENCY","TRIAL",
+            "UNSAFE_WORK_ENVIRONMENT","VETO","WHISTLEBLOWER"
     };
 
     public static void main(String[] args) throws Exception {
