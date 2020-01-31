@@ -25,8 +25,7 @@ public class ElasticSearchAlarmSink {
     public static Logger log = Logger.getGlobal();
 
     private final static String ES_HOST = "localhost";
-    //    private final static int ES_PORT = 9200;
-    private final static int ES_PORT = 9201;
+    private final static int ES_PORT = 9200;
     private final static String ES_PROTOCOL = "http";
 
     private final static String sinkName = "alarm";
@@ -51,7 +50,7 @@ public class ElasticSearchAlarmSink {
     private static IndexRequest createIndexRequest(String indexSubname, Tuple3<Date, Date, Integer> alarm) {
         Map<String, String> json = new HashMap<>();
         json.put("startDate", formatDate(alarm.f0));
-        json.put("endDate", formatDate(alarm.f0));
+        json.put("endDate", formatDate(alarm.f1));
         json.put("count", alarm.f2.toString());
 
         return Requests.indexRequest()
