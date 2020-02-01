@@ -5,7 +5,6 @@ import impro.data.GDELTGkgData;
 import impro.util.*;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.cep.CEP;
@@ -14,42 +13,24 @@ import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.IterativeCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
-import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.util.OutputTag;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
-
-
-/**
- * --input ./src/main/resources/gkg_example_50.csv
- */
 
 public class StreamingCEPMonitoringJob {
     private static Logger log = Logger.getGlobal();
 
     private static final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-    /* TODO If within 3 days there are more than 5 pieces of news about qualcomm, raise a warning in a new index.
-     * Use CEP aggregation to do this. Explain it in the report. As Future work, we should justify why 3 days and
-     * why 5 pieces of news.
-     * */
-
-    /* TODO Show a graph relating companies involved in a series of news and the bigger the involvement, the bigger
-    * the circle in the graph or something like that. Measure involvement by number of appearances in the events.
-    * */
 
     private static String rawChainSectionLabel = "raw-section";
     private static String[] rawChainLocationFilter = {
@@ -173,8 +154,6 @@ public class StreamingCEPMonitoringJob {
         // Apply the defined CEP pattern to the data
         PatternStream<GDELTGkgData> relevantEvents = CEP.pattern(processedData, pattern);
 
-
-
         RelevantFields relevantFields = new RelevantFields(chainSection.getSectionLabel());
         DataStream<Tuple7<Date, String, String, Double, Location[], String[], String[]>> finalResults =
                 relevantEvents.select(relevantFields);
@@ -198,8 +177,6 @@ public class StreamingCEPMonitoringJob {
             voidStream.getSideOutput(organizationsOutputTag).addSink(esStoreSink.getOrganizationsSink());
             voidStream.getSideOutput(themesOutputTag).addSink(esStoreSink.getThemesSink());
         }
-
-
     }
 
     private static class RelevantFields implements PatternSelectFunction<GDELTGkgData, Tuple7<Date, String, String, Double, Location[], String[], String[]>> {
@@ -253,45 +230,6 @@ public class StreamingCEPMonitoringJob {
             return Arrays.stream(this.locations).parallel().anyMatch(orgList.toLowerCase()::contains);
         }
     }
-    
-    private static ProcessFunction<Tuple7<Date, String, String, Double, Location[], String[], String[]>, Void> sideOutput(
-            OutputTag<Tuple3<Date, String, String>> locationsOutputTag,
-            OutputTag<Tuple3<Date, String, String>> organizationsOutputTag,
-            OutputTag<Tuple3<Date, String, String>> themesOutputTag) {
-
-        return new ProcessFunction<Tuple7<Date, String, String, Double, Location[], String[], String[]>, Void>() {
-            @Override
-            public void processElement(Tuple7<Date, String, String, Double, Location[], String[], String[]> event, Context context, Collector<Void> collector) throws Exception {
-                // f4 locations
-                Arrays.asList(event.f4).forEach(location -> {
-                    Tuple3<Date, String, String> locationTuple = new Tuple3<>();
-                    locationTuple.setField(event.f0, 0);
-                    locationTuple.setField(event.f1, 1);
-                    locationTuple.setField(location.getCode(), 2);
-
-                    context.output(locationsOutputTag, locationTuple);
-                });
-
-                // f5 organizations
-                Arrays.asList(event.f5).forEach(organization -> {
-                    Tuple3<Date, String, String> organizationTuple = new Tuple3<>();
-                    organizationTuple.setField(event.f0, 0);
-                    organizationTuple.setField(event.f1, 1);
-                    organizationTuple.setField(organization, 2);
-                    context.output(organizationsOutputTag, organizationTuple);
-                });
-
-                // f6 themes
-                Arrays.asList(event.f6).forEach(theme -> {
-                    Tuple3<Date, String, String> themeTuple = new Tuple3<>();
-                    themeTuple.setField(event.f0, 0);
-                    themeTuple.setField(event.f1, 1);
-                    themeTuple.setField(theme, 2);
-                    context.output(themesOutputTag, themeTuple);
-                });
-            }
-        };
-    }
 
     static class GkgDataAssigner implements AssignerWithPunctuatedWatermarks<GDELTGkgData> {
         @Override
@@ -309,7 +247,6 @@ public class StreamingCEPMonitoringJob {
     public static class CountFunction implements AllWindowFunction<Tuple7<Date, String, String, Double, Location[], String[], String[]>,
             Tuple3<Date,Date,Integer>, TimeWindow> {
 
-
         @Override
         public void apply(TimeWindow window, Iterable<Tuple7<Date, String, String, Double, Location[], String[], String[]>> input, Collector<Tuple3<Date,Date,Integer>> out) {
             int count = 0;
@@ -326,8 +263,6 @@ public class StreamingCEPMonitoringJob {
 
                 out.collect(resultCount);
             }
-
         }
-
     }
 }
