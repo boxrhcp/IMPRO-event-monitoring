@@ -5,6 +5,7 @@ import org.elasticsearch.common.geo.GeoPoint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.lang.NumberFormatException;
 
 public class Location {
     private String original;
@@ -78,8 +79,19 @@ public class Location {
         }
 
         if (locationFields.length >= 6) {
-            double lat = Double.parseDouble(locationFields[4]);
-            double lon = Double.parseDouble(locationFields[5]);
+            double lat;
+            double lon;
+            try
+            {
+                lat = Double.parseDouble(locationFields[4]);
+                lon = Double.parseDouble(locationFields[5]);
+            }
+            catch(NumberFormatException e)
+            {
+                lat=0;
+                lon=0;
+            }
+
             GeoPoint geoPoint = new GeoPoint(lat, lon);
             location.setGeoPoint(geoPoint);
         }
