@@ -25,13 +25,14 @@ public class ElasticsearchStoreSink {
 
     private final static String ES_HOST = "localhost";
     private final static int ES_PORT = 9200;
-//    private final static int ES_PORT = 9201;
+
     private final static String ES_PROTOCOL = "http";
 
     private ElasticsearchSink<Tuple7<Date, String, String, Double, Location[], String[], String[]>> eventsSink;
     private ElasticsearchSink<Tuple3<Date, String, String>> locationsSink;
     private ElasticsearchSink<Tuple3<Date, String, String>> organizationSink;
     private ElasticsearchSink<Tuple3<Date, String, String>> themesSink;
+    private ElasticsearchSink<Tuple3<Date,Date,Integer>> alarmSink;
 
     public ElasticsearchStoreSink(String indexSubname) {
         List<HttpHost> httpHosts = new ArrayList<>();
@@ -41,6 +42,7 @@ public class ElasticsearchStoreSink {
         this.locationsSink = buildLocationSink(httpHosts, indexSubname);
         this.organizationSink = buildOrganizationSink(httpHosts, indexSubname);
         this.themesSink = buildThemeSink(httpHosts, indexSubname);
+        this.alarmSink = buildAlarmSink(httpHosts, indexSubname);
     }
 
     public ElasticsearchSink<Tuple7<Date, String, String, Double, Location[], String[], String[]>> getEventsSink() {
@@ -58,6 +60,11 @@ public class ElasticsearchStoreSink {
     public ElasticsearchSink<Tuple3<Date, String, String>> getThemesSink() {
         return themesSink;
     }
+
+    public ElasticsearchSink<Tuple3<Date,Date,Integer>> getAlarmSink() {
+        return alarmSink;
+    }
+
 
     public static boolean isOnline () {
         RestHighLevelClient client = new RestHighLevelClient(
@@ -138,6 +145,19 @@ public class ElasticsearchStoreSink {
                 .source(json);
     }
 
+    private static IndexRequest createAlarmIndexRequest(String indexSubname, Tuple3<Date, Date, Integer> alarm) {
+        Map<String, String> json = new HashMap<>();
+        json.put("startDate", formatDate(alarm.f0));
+        json.put("endDate", formatDate(alarm.f1));
+        json.put("count", alarm.f2.toString());
+
+        return Requests.indexRequest()
+                .index("alarm" + "-" + indexSubname)
+                .type("events")
+                .source(json);
+    }
+
+
     private ElasticsearchSink<Tuple7<Date, String, String, Double, Location[], String[], String[]>> buildEventSink(List<HttpHost> httpHosts, String indexSubname) {
 
         ElasticsearchSink.Builder<Tuple7<Date, String, String, Double, Location[], String[], String[]>> esSinkBuilder = new ElasticsearchSink.Builder<>(
@@ -192,4 +212,18 @@ public class ElasticsearchStoreSink {
 
         return esSinkBuilder.build();
     }
+
+    private ElasticsearchSink<Tuple3<Date, Date, Integer> > buildAlarmSink(List<HttpHost> httpHosts, String indexSubname) {
+        ElasticsearchSink.Builder<Tuple3<Date, Date, Integer> > esSinkBuilder = new ElasticsearchSink.Builder<>(
+                httpHosts,
+                (Tuple3<Date, Date, Integer>  element, RuntimeContext ctx, RequestIndexer indexer) -> {
+                    indexer.add(createAlarmIndexRequest(indexSubname, element));
+                });
+
+        // configuration for the bulk requests; this instructs the sink to emit after every element, otherwise they would be buffered
+        esSinkBuilder.setBulkFlushMaxActions(1);
+
+        return esSinkBuilder.build();
+    }
+
 }

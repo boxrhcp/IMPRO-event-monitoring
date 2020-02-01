@@ -5,6 +5,7 @@ import impro.data.GDELTGkgData;
 import impro.util.*;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.cep.CEP;
@@ -13,14 +14,19 @@ import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.IterativeCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
+import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.OutputTag;
 
 import java.util.*;
@@ -127,6 +133,7 @@ public class StreamingCEPMonitoringJob {
         endChain.setThemeFilter(endChainThemesFilter);
         processChainSection(gdeltGkgData, endChain);
 
+        // check for alarms
         env.execute("CPU Events processing and ES storing");
     }
 
@@ -167,10 +174,15 @@ public class StreamingCEPMonitoringJob {
         PatternStream<GDELTGkgData> relevantEvents = CEP.pattern(processedData, pattern);
 
 
+
         RelevantFields relevantFields = new RelevantFields(chainSection.getSectionLabel());
         DataStream<Tuple7<Date, String, String, Double, Location[], String[], String[]>> finalResults =
                 relevantEvents.select(relevantFields);
 
+        AllWindowedStream windowedFinal=
+                finalResults.windowAll(TumblingEventTimeWindows.of(Time.days(5)));
+
+        DataStream<Tuple3<Date,Date,Integer>> countFinal = windowedFinal.apply(new CountFunction());
         final OutputTag<Tuple3<Date, String, String>> locationsOutputTag = new OutputTag<Tuple3<Date, String, String>>("location-output"){};
         final OutputTag<Tuple3<Date, String, String>> organizationsOutputTag = new OutputTag<Tuple3<Date, String, String>>("organizations-output"){};
         final OutputTag<Tuple3<Date, String, String>> themesOutputTag = new OutputTag<Tuple3<Date, String, String>>("themes-output"){};
@@ -178,12 +190,16 @@ public class StreamingCEPMonitoringJob {
         SingleOutputStreamOperator<Void> voidStream = finalResults.process(sideOutput(locationsOutputTag, organizationsOutputTag, themesOutputTag));
 
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
+
         if (ElasticsearchStoreSink.isOnline()) {
             finalResults.addSink(esStoreSink.getEventsSink());
+            countFinal.addSink(esStoreSink.getAlarmSink());
             voidStream.getSideOutput(locationsOutputTag).addSink(esStoreSink.getLocationsSink());
             voidStream.getSideOutput(organizationsOutputTag).addSink(esStoreSink.getOrganizationsSink());
             voidStream.getSideOutput(themesOutputTag).addSink(esStoreSink.getThemesSink());
         }
+
+
     }
 
     private static class RelevantFields implements PatternSelectFunction<GDELTGkgData, Tuple7<Date, String, String, Double, Location[], String[], String[]>> {
@@ -288,5 +304,30 @@ public class StreamingCEPMonitoringJob {
             return new Watermark(extractedTimestamp - 20000);
 //            return new Watermark(event.getV21Date().getTime());
         }
+    }
+
+    public static class CountFunction implements AllWindowFunction<Tuple7<Date, String, String, Double, Location[], String[], String[]>,
+            Tuple3<Date,Date,Integer>, TimeWindow> {
+
+
+        @Override
+        public void apply(TimeWindow window, Iterable<Tuple7<Date, String, String, Double, Location[], String[], String[]>> input, Collector<Tuple3<Date,Date,Integer>> out) {
+            int count = 0;
+
+            for (Tuple7<Date, String, String, Double, Location[], String[], String[]> in: input) {
+                count++;
+            }
+
+            if(count >= 5)
+            {
+                Tuple3<Date, Date, Integer> resultCount = new Tuple3<Date,Date,Integer>(new Date(window.getStart()),
+                        new Date(window.getEnd()),
+                        count);
+
+                out.collect(resultCount);
+            }
+
+        }
+
     }
 }
