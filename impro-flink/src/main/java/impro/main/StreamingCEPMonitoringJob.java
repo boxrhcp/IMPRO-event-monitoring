@@ -121,15 +121,21 @@ public class StreamingCEPMonitoringJob {
     private static void processChainSection(DataStream<GDELTGkgData> gdeltGkgData, ChainSection chainSection) {
         DataStream<GDELTGkgData> processedData = gdeltGkgData;
 
-        // Filter organizations
-        if (chainSection.getOrganizationFilter() != null) {
-            processedData = gdeltGkgData.filter(new FilterOrganisations(chainSection.getOrganizationFilter()));
-        }
+        // Filter
+        processedData = gdeltGkgData.filter(
+                new Filter(
+                        chainSection.getOrganizationFilter(),
+                        chainSection.getLocationFilter()));
 
-        // Filter locations
-        if (chainSection.getLocationFilter() != null) {
-            processedData = gdeltGkgData.filter(new FilterLocation(chainSection.getLocationFilter()));
-        }
+//        // Filter organizations
+//        if (chainSection.getOrganizationFilter() != null) {
+//            processedData = gdeltGkgData.filter(new FilterOrganisations(chainSection.getOrganizationFilter()));
+//        }
+//
+//        // Filter locations
+//        if (chainSection.getLocationFilter() != null) {
+//            processedData = gdeltGkgData.filter(new FilterLocation(chainSection.getLocationFilter()));
+//        }
 
         // Filter themes with CEP
         /* We have to extract the themes into an array first. Otherwise, Flink will throw an exception complaining that
@@ -158,24 +164,13 @@ public class StreamingCEPMonitoringJob {
         DataStream<Tuple7<Date, String, String, Double, Location[], String[], String[]>> finalResults =
                 relevantEvents.select(relevantFields);
 
-        AllWindowedStream windowedFinal=
-                finalResults.windowAll(TumblingEventTimeWindows.of(Time.days(5)));
-
-        DataStream<Tuple3<Date,Date,Integer>> countFinal = windowedFinal.apply(new CountFunction());
-        final OutputTag<Tuple3<Date, String, String>> locationsOutputTag = new OutputTag<Tuple3<Date, String, String>>("location-output"){};
-        final OutputTag<Tuple3<Date, String, String>> organizationsOutputTag = new OutputTag<Tuple3<Date, String, String>>("organizations-output"){};
-        final OutputTag<Tuple3<Date, String, String>> themesOutputTag = new OutputTag<Tuple3<Date, String, String>>("themes-output"){};
-
-        SingleOutputStreamOperator<Void> voidStream = finalResults.process(sideOutput(locationsOutputTag, organizationsOutputTag, themesOutputTag));
+//        AllWindowedStream windowedFinal = finalResults.windowAll(TumblingEventTimeWindows.of(Time.days(5)));
 
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
 
         if (ElasticsearchStoreSink.isOnline()) {
             finalResults.addSink(esStoreSink.getEventsSink());
-            countFinal.addSink(esStoreSink.getAlarmSink());
-            voidStream.getSideOutput(locationsOutputTag).addSink(esStoreSink.getLocationsSink());
-            voidStream.getSideOutput(organizationsOutputTag).addSink(esStoreSink.getOrganizationsSink());
-            voidStream.getSideOutput(themesOutputTag).addSink(esStoreSink.getThemesSink());
+//            countFinal.addSink(esStoreSink.getAlarmSink());
         }
     }
 
@@ -198,6 +193,35 @@ public class StreamingCEPMonitoringJob {
                     Location.formatLocations(first.getV1Locations()),
                     Organization.formatOrganizations(first.getV1Organizations()),
                     Theme.formatThemes(first.getV1Themes()));
+        }
+    }
+
+    public static class Filter implements FilterFunction<GDELTGkgData> {
+        private String[] organizations;
+        private String[] locations;
+
+        public Filter(String[] organizations, String[] locations) {
+            this.organizations = organizations;
+            this.locations = locations;
+        }
+
+        @Override
+        public boolean filter(GDELTGkgData event) {
+            String orgList = event.getV1Organizations();
+            String locList = event.getV1Locations();
+
+            boolean org = true;
+            boolean loc = true;
+
+            if (this.organizations != null) {
+                org = Arrays.stream(this.organizations).parallel().anyMatch(orgList.toLowerCase()::contains);
+            }
+
+            if (this.locations != null) {
+                loc = Arrays.stream(this.locations).parallel().anyMatch(locList.toLowerCase()::contains);
+            }
+
+            return org && loc;
         }
     }
 
