@@ -1,6 +1,6 @@
 # IMPRO-Event-Monitoring
 ## Configure setup
-To connect Flink with Elastic Stack the host and the port are needed in the following file: https://github.com/boxrhcp/IMPRO-event-monitoring/blob/fa7981662878c51fca7a3b50a98e8dc81c55a1d8/impro-flink/src/main/java/impro/connectors/sinks/ElasticsearchStoreSink.java#L26
+To connect Flink with Elastic Stack the host and the port of Elastic Search are needed in the following file: https://github.com/boxrhcp/IMPRO-event-monitoring/blob/fa7981662878c51fca7a3b50a98e8dc81c55a1d8/impro-flink/src/main/java/impro/connectors/sinks/ElasticsearchStoreSink.java#L26
 
 ## Compile project
 To compile the apache Flink process execute:
