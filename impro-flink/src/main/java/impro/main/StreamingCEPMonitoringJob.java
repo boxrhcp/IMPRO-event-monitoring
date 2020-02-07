@@ -13,11 +13,14 @@ import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.IterativeCondition;
 import org.apache.flink.streaming.api.TimeCharacteristic;
+import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
@@ -164,13 +167,15 @@ public class StreamingCEPMonitoringJob {
         DataStream<Tuple7<Date, String, String, Double, Location[], String[], String[]>> finalResults =
                 relevantEvents.select(relevantFields);
 
-//        AllWindowedStream windowedFinal = finalResults.windowAll(TumblingEventTimeWindows.of(Time.days(5)));
+        AllWindowedStream windowedFinal = finalResults.windowAll(TumblingEventTimeWindows.of(Time.days(5)));
+        DataStream<Tuple3<Date,Date,Integer>> countFinal = windowedFinal.apply(new CountFunction());
+
 
         ElasticsearchStoreSink esStoreSink = new ElasticsearchStoreSink(chainSection.getSectionLabel());
 
         if (ElasticsearchStoreSink.isOnline()) {
             finalResults.addSink(esStoreSink.getEventsSink());
-//            countFinal.addSink(esStoreSink.getAlarmSink());
+            countFinal.addSink(esStoreSink.getAlarmSink());
         }
     }
 
